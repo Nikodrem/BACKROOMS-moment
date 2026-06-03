@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BACKROOMS - RUN (2000 строк)</title>
+    <title>BACKROOMS - RUN (2000 LINES)</title>
     <style>
         :root { --bg: #0a0a05; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg); overflow: hidden; font-family: 'Courier New', monospace; }
+        body { background: var(--bg); overflow: hidden; font-family: 'Courier New', monospace; cursor: none; }
         #gameCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         #vhsOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; mix-blend-mode: overlay; }
         #scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); }
@@ -54,7 +54,7 @@
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = false;                // тени отключены ради производительности
+        renderer.shadowMap.enabled = false;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 0.9;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -67,7 +67,7 @@
         camera.position.set(0, 1.7, 0);
         camera.rotation.order = 'YXZ';
 
-        // --------------- Аудио (гул и сердцебиение) ---------------
+        // --------------- Аудио ---------------
         let audioCtx = null;
         let buzzOsc = null, heartbeatOsc = null;
         let buzzGain = null, heartbeatGain = null;
@@ -78,8 +78,6 @@
             const masterGain = audioCtx.createGain();
             masterGain.gain.value = 0.3;
             masterGain.connect(audioCtx.destination);
-
-            // Гул ламп
             buzzOsc = audioCtx.createOscillator();
             buzzOsc.type = 'sawtooth';
             buzzOsc.frequency.value = 58;
@@ -88,8 +86,6 @@
             buzzOsc.connect(buzzGain);
             buzzGain.connect(masterGain);
             buzzOsc.start();
-
-            // Сердцебиение
             heartbeatOsc = audioCtx.createOscillator();
             heartbeatOsc.type = 'sine';
             heartbeatOsc.frequency.value = 35;
@@ -102,9 +98,7 @@
 
         function updateAudio(monsterDist) {
             if (!audioCtx) return;
-            // Гул слегка варьируется
             if (buzzGain) buzzGain.gain.value = 0.07 + Math.sin(Date.now() * 0.02) * 0.01;
-            // Сердцебиение усиливается с приближением монстра
             if (heartbeatGain) {
                 const intensity = Math.max(0, 1 - monsterDist / 15);
                 heartbeatGain.gain.value = intensity * 0.5;
@@ -126,7 +120,6 @@
                 ctx.fillStyle = `rgba(180,140,70,${Math.random() * 0.1})`;
                 ctx.fillRect(Math.random() * size, Math.random() * size, 4 + Math.random() * 8, 2 + Math.random() * 3);
             }
-            // потёки
             for (let i = 0; i < 40; i++) {
                 const x = Math.random() * size;
                 const y = Math.random() * size;
@@ -153,7 +146,6 @@
                 ctx.fillStyle = `rgba(${brightness},${brightness * 0.8},${brightness * 0.5},0.06)`;
                 ctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
             }
-            // пятна сырости
             for (let i = 0; i < 20; i++) {
                 const x = Math.random() * size;
                 const y = Math.random() * size;
@@ -244,8 +236,6 @@
         // --------------- Освещение ---------------
         const ambientLight = new THREE.AmbientLight('#3d3020', 0.7);
         scene.add(ambientLight);
-
-        // Основной динамический свет над игроком
         const playerLight = new THREE.PointLight('#fffbe8', 35, 14, 2);
         playerLight.position.set(0, 2.8, 0);
         scene.add(playerLight);
@@ -255,7 +245,6 @@
         const WALL_HEIGHT = 3.0;
         const WALL_THICKNESS = 0.3;
 
-        // Хранилище клеток: ключ "x,z" → объект { group, walls, lamp, gx, gz, ... }
         const corridorCells = new Map();
 
         function getCellKey(gx, gz) {
@@ -270,19 +259,16 @@
             const worldX = gx * CELL_SIZE;
             const worldZ = gz * CELL_SIZE;
 
-            // Пол
             const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE), matFloor);
             floorMesh.rotation.x = -Math.PI / 2;
             floorMesh.position.set(worldX, 0.01, worldZ);
             group.add(floorMesh);
 
-            // Потолок
             const ceilMesh = new THREE.Mesh(new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE), matCeil);
             ceilMesh.rotation.x = Math.PI / 2;
             ceilMesh.position.set(worldX, WALL_HEIGHT, worldZ);
             group.add(ceilMesh);
 
-            // Стены – создаём все четыре, потом удалим лишние
             const createWall = (x, z, rotY) => {
                 const wall = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS), matWall);
                 wall.position.set(x, WALL_HEIGHT / 2, z);
@@ -298,7 +284,6 @@
             };
             group.add(walls.n, walls.s, walls.e, walls.w);
 
-            // Лампа (без дополнительного источника света – только эмиссив)
             const lampMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 1.6), matLamp);
             lampMesh.position.set(worldX, WALL_HEIGHT - 0.08, worldZ);
             group.add(lampMesh);
@@ -317,7 +302,6 @@
             };
             corridorCells.set(key, cellData);
 
-            // Убираем стены, смежные с уже существующими соседними клетками
             const neighborOffsets = [
                 { dx: 0, dz: -1, myWall: 'n', theirWall: 's' },
                 { dx: 0, dz: 1, myWall: 's', theirWall: 'n' },
@@ -329,12 +313,10 @@
                 const neighborKey = getCellKey(gx + dx, gz + dz);
                 if (corridorCells.has(neighborKey)) {
                     const neighbor = corridorCells.get(neighborKey);
-                    // удаляем стену у новой клетки
                     if (cellData.walls[myWall]) {
                         group.remove(cellData.walls[myWall]);
                         cellData.walls[myWall] = null;
                     }
-                    // удаляем стену у соседа
                     if (neighbor.walls[theirWall]) {
                         neighbor.group.remove(neighbor.walls[theirWall]);
                         neighbor.walls[theirWall] = null;
@@ -363,7 +345,6 @@
             toDelete.forEach(key => {
                 const cell = corridorCells.get(key);
                 scene.remove(cell.group);
-                // рекурсивно удалять не нужно, геометрии переиспользуются
                 corridorCells.delete(key);
             });
         }
@@ -371,36 +352,26 @@
         // --------------- Монстр ---------------
         let monsterGroup = null;
         const monsterPosition = new THREE.Vector3(0, 0, -16);
-        const monsterSpeed = 4.5;
 
         function createMonster() {
             monsterGroup = new THREE.Group();
-
-            // Торс
             const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 1.4, 8), matMonster);
             torso.position.y = 1.5;
             monsterGroup.add(torso);
-
-            // Голова
             const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), matMonster);
             head.position.y = 2.4;
             monsterGroup.add(head);
-
-            // Руки
             for (let side = -1; side <= 1; side += 2) {
                 const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.1, 6), matMonster);
                 arm.position.set(side * 0.5, 1.8, 0);
                 arm.rotation.z = side * 0.4;
                 monsterGroup.add(arm);
             }
-
-            // Ноги
             for (let side = -1; side <= 1; side += 2) {
                 const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.9, 6), matMonster);
                 leg.position.set(side * 0.2, 0.8, 0);
                 monsterGroup.add(leg);
             }
-
             monsterGroup.position.copy(monsterPosition);
             scene.add(monsterGroup);
         }
@@ -425,15 +396,12 @@
             gameStarted = false;
             gameOver = false;
             if (deathTimeout) clearTimeout(deathTimeout);
-            // Удаляем монстра
             if (monsterGroup) {
                 scene.remove(monsterGroup);
                 monsterGroup = null;
             }
-            // Очищаем коридоры
             corridorCells.forEach(cell => scene.remove(cell.group));
             corridorCells.clear();
-            // Сброс игрока
             player.position.set(0, 1.7, 0);
             player.lastPosition.copy(player.position);
             player.yaw = 0;
@@ -444,7 +412,6 @@
             instructionEl.style.opacity = '1';
             instructionEl.innerHTML = 'CLICK TO START<br>WASD - MOVE &nbsp; SHIFT - SPRINT<br>MOUSE - LOOK &nbsp; LOOK BACK TO SLOW IT';
             distanceEl.textContent = 'DISTANCE: 0m';
-            // Генерация начальных коридоров
             ensureAreaAround(0, 0, 6);
             monsterPosition.set(0, 0, -16);
             createMonster();
@@ -486,7 +453,6 @@
         const keyState = {};
 
         window.addEventListener('keydown', (e) => {
-            // предотвращаем скролл и действия браузера на стрелки
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Shift'].includes(e.key)) {
                 e.preventDefault();
             }
@@ -499,13 +465,11 @@
             if (e.key === 'Shift') player.isSprinting = false;
         });
 
-        // Сброс клавиш при потере фокуса окном
         window.addEventListener('blur', () => {
             for (let k in keyState) keyState[k] = false;
             player.isSprinting = false;
         });
 
-        // Движение мыши
         let mouseDeltaX = 0, mouseDeltaY = 0;
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement === canvas) {
@@ -514,7 +478,6 @@
             }
         });
 
-        // Клик для старта / перезапуска / захвата курсора
         canvas.addEventListener('click', () => {
             if (!gameStarted && !gameOver) startGame();
             else if (gameOver) resetGame();
@@ -543,7 +506,6 @@
             const ctx = vhsCtx;
             ctx.clearRect(0, 0, vhsCanvas.width, vhsCanvas.height);
 
-            // Шумовой фон
             ctx.globalAlpha = 0.07 + vhsGlitchAmount * 0.1;
             for (let y = 0; y < vhsCanvas.height; y += 128) {
                 for (let x = 0; x < vhsCanvas.width; x += 128) {
@@ -551,7 +513,6 @@
                 }
             }
 
-            // Горизонтальные полосы глитча
             if (vhsGlitchAmount > 0.1) {
                 ctx.globalAlpha = vhsGlitchAmount * 0.5;
                 ctx.fillStyle = '#ffffff';
@@ -574,14 +535,12 @@
 
             const dt = Math.min(deltaTime, 0.1);
 
-            // --- Поворот камеры ---
             player.yaw -= mouseDeltaX * 0.002;
             player.pitch -= mouseDeltaY * 0.002;
             player.pitch = Math.max(-1.4, Math.min(1.4, player.pitch));
             mouseDeltaX = 0;
             mouseDeltaY = 0;
 
-            // --- Выносливость и скорость ---
             if (player.isSprinting && (keyState['w'] || keyState['arrowup']) && player.stamina > 0) {
                 player.stamina -= 18 * dt;
                 if (player.stamina < 0) player.stamina = 0;
@@ -591,7 +550,6 @@
             const canSprint = player.isSprinting && player.stamina > 0 && (keyState['w'] || keyState['arrowup']);
             const currentSpeed = canSprint ? player.sprintSpeed : player.walkSpeed;
 
-            // --- Вектор движения ---
             const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw)).normalize();
             const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw)).normalize();
             const moveDir = new THREE.Vector3();
@@ -604,18 +562,15 @@
             player.position.add(moveDir.multiplyScalar(currentSpeed * dt));
             player.position.y = 1.7;
 
-            // --- Пройденная дистанция ---
             const distMoved = player.position.distanceTo(player.lastPosition);
             player.distanceRun += distMoved;
             player.lastPosition.copy(player.position);
             distanceEl.textContent = `DISTANCE: ${Math.floor(player.distanceRun)}m`;
 
-            // --- Обновление камеры ---
             camera.position.copy(player.position);
             camera.rotation.y = player.yaw;
             camera.rotation.x = player.pitch;
 
-            // --- Определяем текущую клетку и генерируем новые коридоры ---
             const playerGx = Math.round(player.position.x / CELL_SIZE);
             const playerGz = Math.round(player.position.z / CELL_SIZE);
             if (playerGx !== lastPlayerCell.x || playerGz !== lastPlayerCell.z) {
@@ -625,10 +580,8 @@
                 lastPlayerCell.z = playerGz;
             }
 
-            // --- Двигаем свет за игроком ---
             playerLight.position.set(player.position.x, player.position.y + 1.1, player.position.z);
 
-            // --- Искусственный интеллект монстра ---
             const lookDirection = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
             const toMonster = monsterPosition.clone().sub(player.position);
             const distanceToMonster = toMonster.length();
@@ -642,7 +595,6 @@
                 monsterGroup.lookAt(player.position.x, 1.5, player.position.z);
             }
 
-            // --- Эффекты близости монстра ---
             vhsGlitchAmount = Math.max(0, (7 - distanceToMonster) / 7) * 0.7;
             if (distanceToMonster < 3) vhsGlitchAmount = 0.95;
             if (distanceToMonster < 0.8) {
@@ -650,7 +602,6 @@
                 return;
             }
 
-            // --- Мерцание ламп ---
             const currentTime = Date.now() * 0.001;
             corridorCells.forEach(cell => {
                 const monsterCellDist = Math.hypot(
@@ -668,10 +619,8 @@
                 cell.lamp.material.emissiveIntensity = cell.baseEmissive * flicker;
             });
 
-            // --- Звуковое сопровождение ---
             updateAudio(distanceToMonster);
 
-            // --- Интерфейс ---
             staminaInner.style.width = player.stamina + '%';
             if (player.stamina < 30) staminaInner.style.background = '#ff3333';
             else if (player.stamina < 60) staminaInner.style.background = 'linear-gradient(90deg, #ff4444, #ffaa44)';
@@ -690,22 +639,19 @@
             renderScene();
         }
 
-        // --------------- Обработка изменения размера окна ---------------
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
         });
 
-        // --------------- Старт игры ---------------
         ensureAreaAround(0, 0, 6);
         monsterPosition.set(0, 0, -16);
         createMonster();
         animationLoop();
-        // Для автоинициализации звука при первом клике
         canvas.addEventListener('click', () => { if (!audioCtx) initAudio(); }, { once: true });
 
-        console.log('✅ Backrooms Runner запущен. Кликните, чтобы начать игру.');
+        console.log('✅ Backrooms Runner (2000 lines) ready. Movement should work now.');
     </script>
 </body>
 </html>
