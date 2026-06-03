@@ -1,1570 +1,410 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BACKROOMS - RUN</title>
-    <style>
-        :root {
-            --bg: #0a0a05;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--bg);
-            overflow: hidden;
-            font-family: 'Courier New', monospace;
-            cursor: none;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            height: 100vh;
-            width: 100vw;
-            touch-action: none;
-        }
-
-        #gameCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            image-rendering: auto;
-        }
-
-        #vhsOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none;
-            mix-blend-mode: overlay;
-        }
-
-        #scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 3;
-            pointer-events: none;
-            background: repeating-linear-gradient(0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0, 0, 0, 0.03) 2px,
-                    rgba(0, 0, 0, 0.03) 4px);
-        }
-
-        #vignette {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 4;
-            pointer-events: none;
-            box-shadow: inset 0 0 180px 80px rgba(0, 0, 0, 0.7);
-        }
-
-        #hud {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 5;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #staminaBarOuter {
-            width: 200px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 3px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        #staminaBarInner {
-            height: 100%;
-            background: linear-gradient(90deg, #ff4444, #ffaa44, #44ff44);
-            transition: width 0.1s;
-            border-radius: 2px;
-            width: 100%;
-        }
-
-        #message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            pointer-events: none;
-            color: #ffddcc;
-            font-size: 28px;
-            letter-spacing: 6px;
-            text-shadow: 0 0 20px rgba(255, 100, 50, 0.8), 0 0 60px rgba(255, 50, 0, 0.5);
-            opacity: 0;
-            transition: opacity 0.3s;
-            text-align: center;
-        }
-
-        #message.visible {
-            opacity: 1;
-        }
-
-        #instruction {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            pointer-events: none;
-            color: #ffe0c0;
-            font-size: 18px;
-            letter-spacing: 3px;
-            text-shadow: 0 0 15px rgba(255, 150, 80, 0.7);
-            opacity: 1;
-            transition: opacity 0.8s;
-            text-align: center;
-            line-height: 2;
-        }
-
-        #distance {
-            position: fixed;
-            top: 30px;
-            right: 30px;
-            z-index: 5;
-            pointer-events: none;
-            color: rgba(255, 200, 150, 0.6);
-            font-size: 13px;
-            letter-spacing: 2px;
-            font-family: 'Courier New', monospace;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>BACKROOMS – БЕГИ</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0502; overflow: hidden; font-family: 'Courier New', monospace; }
+    canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
+    #vhs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; mix-blend-mode: overlay; }
+    #scanlines {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    }
+    #vignette {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 4;
+      pointer-events: none;
+      box-shadow: inset 0 0 150px 60px rgba(0,0,0,0.8);
+    }
+    #hud {
+      position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); z-index: 5;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      pointer-events: none;
+    }
+    #stamina-bar {
+      width: 200px; height: 5px; background: rgba(255,255,255,0.15);
+      border-radius: 2px; border: 1px solid rgba(255,255,255,0.2);
+      overflow: hidden;
+    }
+    #stamina-fill {
+      height: 100%; width: 100%; background: #ffaa44;
+      transition: width 0.1s;
+    }
+    #message {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 10; color: #ffccaa; font-size: 2rem; letter-spacing: 5px;
+      text-shadow: 0 0 30px #ff4422; opacity: 0; transition: 0.3s;
+      text-align: center; pointer-events: none;
+    }
+    #message.show { opacity: 1; }
+    #instruction {
+      position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 10; color: #eeddcc; font-size: 1.1rem; letter-spacing: 2px;
+      text-shadow: 0 0 15px #aa4422; text-align: center; line-height: 2;
+      pointer-events: none; transition: opacity 0.8s;
+    }
+    #distance {
+      position: fixed; top: 25px; right: 30px; z-index: 5;
+      color: rgba(255,200,150,0.7); font-size: 0.9rem; letter-spacing: 2px;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <canvas id="vhsOverlay"></canvas>
-    <div id="scanlines"></div>
-    <div id="vignette"></div>
-    <div id="hud">
-        <div id="staminaBarOuter"><div id="staminaBarInner"></div></div>
-    </div>
-    <div id="message"></div>
-    <div id="instruction">CLICK TO START<br>WASD - MOVE &nbsp; SHIFT - SPRINT<br>MOUSE - LOOK &nbsp; LOOK BACK TO SLOW IT</div>
-    <div id="distance">DISTANCE: 0m</div>
+  <canvas id="game"></canvas>
+  <canvas id="vhs"></canvas>
+  <div id="scanlines"></div>
+  <div id="vignette"></div>
+  <div id="hud">
+    <div id="stamina-bar"><div id="stamina-fill"></div></div>
+  </div>
+  <div id="message"></div>
+  <div id="instruction">КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО</div>
+  <div id="distance">ДИСТАНЦИЯ: 0м</div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // ────────────────────────────── ЭЛЕМЕНТЫ ИНТЕРФЕЙСА ──────────────────────────────
+    const canvas = document.getElementById('game');
+    const vhsCanvas = document.getElementById('vhs');
+    const ctxVhs = vhsCanvas.getContext('2d');
+    const msgEl = document.getElementById('message');
+    const instrEl = document.getElementById('instruction');
+    const distEl = document.getElementById('distance');
+    const staminaFill = document.getElementById('stamina-fill');
+
+    // ────────────────────────────── THREE.JS НАСТРОЙКА ──────────────────────────────
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
+    renderer.setPixelRatio(1); // форсим низкое разрешение для производительности
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = false; // БЕЗ ТЕНЕЙ – огромный прирост FPS
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.8;
+    
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#1a1008');
+    scene.fog = new THREE.FogExp2('#1a1008', 0.0003);
+
+    const camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.3, 40);
+    camera.position.set(0, 1.7, 0);
+    camera.rotation.order = 'YXZ';
+
+    // ────────────────────────────── ПРОЦЕДУРНЫЕ ТЕКСТУРЫ (уменьшенные) ──────────────────────────────
+    function texWall() {
+      const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#d4b96a'; ctx.fillRect(0,0,128,128);
+      for(let i=0;i<600;i++){ ctx.fillStyle=`rgba(180,140,70,${Math.random()*0.1})`; ctx.fillRect(Math.random()*128,Math.random()*128,2+Math.random()*4,1+Math.random()*3);}
+      return new THREE.CanvasTexture(c);
+    }
+    function texFloor() {
+      const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#6b5c48'; ctx.fillRect(0,0,128,128);
+      for(let i=0;i<2000;i++){ ctx.fillStyle=`rgba(${70+Math.random()*40},${50+Math.random()*30},${30+Math.random()*20},0.08)`; ctx.fillRect(Math.random()*128,Math.random()*128,1.5,1.5);}
+      return new THREE.CanvasTexture(c);
+    }
+    function texCeil() {
+      const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#e8e4d8'; ctx.fillRect(0,0,64,64);
+      return new THREE.CanvasTexture(c);
+    }
+    function texMonster() {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#3d1a1a'; ctx.fillRect(0,0,256,256);
+      for(let i=0;i<800;i++){ ctx.fillStyle=`rgba(${40+Math.random()*60},${Math.random()*30},${Math.random()*20},0.3)`; ctx.beginPath(); ctx.arc(Math.random()*256,Math.random()*256,4+Math.random()*12,0,Math.PI*2); ctx.fill();}
+      return new THREE.CanvasTexture(c);
+    }
+
+    const matWall = new THREE.MeshStandardMaterial({ map: texWall(), roughness: 0.8 });
+    const matFloor = new THREE.MeshStandardMaterial({ map: texFloor(), roughness: 0.9 });
+    const matCeil = new THREE.MeshStandardMaterial({ map: texCeil(), roughness: 0.8 });
+    const matMonster = new THREE.MeshStandardMaterial({ map: texMonster(), roughness: 0.4, color: '#cc9988' });
+
+    // ────────────────────────────── ОСВЕЩЕНИЕ (ОДНА ЛАМПА) ──────────────────────────────
+    const ambient = new THREE.AmbientLight('#4a3a2a', 0.5);
+    scene.add(ambient);
+    const playerLight = new THREE.PointLight('#fffbe8', 25, 9, 2);
+    playerLight.position.set(0, 2.6, 0);
+    scene.add(playerLight);
+    // Дополнительный свет для монстра
+    const monsterGlow = new THREE.PointLight('#441111', 2, 4, 2);
+    monsterGlow.position.set(0,1.5,0);
+
+    // ────────────────────────────── СИСТЕМА КОРИДОРОВ (ЛЁГКАЯ) ──────────────────────────────
+    const CELL = 4.0, HALF = CELL/2, WALL_H = 3.0, WALL_D = 0.15;
+    const cells = new Map(); // key "x,z" -> { mesh, walls: {n,s,e,w} }
+    
+    function addCell(gx, gz) {
+      const key = `${gx},${gz}`;
+      if (cells.has(key)) return;
+      const group = new THREE.Group();
+      const wx = gx*CELL, wz = gz*CELL;
+      
+      // пол и потолок
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(CELL, CELL), matFloor);
+      floor.rotation.x = -Math.PI/2; floor.position.set(wx,0.01,wz); group.add(floor);
+      const ceil = new THREE.Mesh(new THREE.PlaneGeometry(CELL, CELL), matCeil);
+      ceil.rotation.x = Math.PI/2; ceil.position.set(wx, WALL_H, wz); group.add(ceil);
+      
+      // стены
+      const walls = { n: null, s: null, e: null, w: null };
+      const createWall = (x, z, rotY) => {
+        const w = new THREE.Mesh(new THREE.BoxGeometry(CELL, WALL_H, WALL_D), matWall);
+        w.position.set(x, WALL_H/2, z);
+        w.rotation.y = rotY;
+        return w;
+      };
+      // все четыре стены, потом лишние удалим
+      walls.n = createWall(wx, wz - HALF, 0);
+      walls.s = createWall(wx, wz + HALF, 0);
+      walls.e = createWall(wx + HALF, wz, Math.PI/2);
+      walls.w = createWall(wx - HALF, wz, Math.PI/2);
+      Object.values(walls).forEach(w => group.add(w));
+      
+      scene.add(group);
+      cells.set(key, { group, walls, gx, gz });
+      
+      // удаляем стены, смежные с уже существующими клетками
+      const neighbors = [
+        [gx, gz-1, 'n', 's'], [gx, gz+1, 's', 'n'],
+        [gx+1, gz, 'e', 'w'], [gx-1, gz, 'w', 'e']
+      ];
+      neighbors.forEach(([nx, nz, myWall, theirWall]) => {
+        const nkey = `${nx},${nz}`;
+        if (cells.has(nkey)) {
+          // убираем свою стену
+          if (walls[myWall]) { group.remove(walls[myWall]); walls[myWall] = null; }
+          // убираем стену соседа
+          const neighbor = cells.get(nkey);
+          if (neighbor.walls[theirWall]) {
+            neighbor.group.remove(neighbor.walls[theirWall]);
+            neighbor.walls[theirWall] = null;
+          }
         }
-    </script>
+      });
+    }
 
-    <script type="module">
-        import * as THREE from 'three';
-
-        // ==================== DOM ELEMENTS ====================
-        const canvas = document.getElementById('gameCanvas');
-        const vhsCanvas = document.getElementById('vhsOverlay');
-        const vhsCtx = vhsCanvas.getContext('2d');
-        const messageEl = document.getElementById('message');
-        const instructionEl = document.getElementById('instruction');
-        const distanceEl = document.getElementById('distance');
-        const staminaInner = document.getElementById('staminaBarInner');
-
-        // ==================== THREE.JS SETUP ====================
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 0.9;
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color('#1a1008');
-        scene.fog = new THREE.FogExp2('#1a1008', 0.00025);
-
-        const camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.3, 80);
-        camera.position.set(0, 1.7, 0);
-        camera.rotation.order = 'YXZ';
-
-        // ==================== AUDIO SYSTEM ====================
-        let audioCtx = null;
-        let masterGain = null;
-        let buzzOscillators = [];
-        let ambientNoiseNode = null;
-        let heartbeatNode = null;
-        let monsterProximityGain = null;
-
-        function initAudio() {
-            if (audioCtx) return;
-            audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0.35;
-            masterGain.connect(audioCtx.destination);
-
-            // Fluorescent buzz
-            const buzzGain = audioCtx.createGain();
-            buzzGain.gain.value = 0.12;
-            buzzGain.connect(masterGain);
-
-            for (let i = 0; i < 3; i++) {
-                const osc = audioCtx.createOscillator();
-                const freq = 55 + i * 2.3 + Math.random() * 8;
-                osc.type = 'sawtooth';
-                osc.frequency.value = freq;
-                const g = audioCtx.createGain();
-                g.gain.value = 0.04 + Math.random() * 0.03;
-                osc.connect(g);
-                g.connect(buzzGain);
-                osc.start();
-                buzzOscillators.push({ osc, gain: g, baseFreq: freq });
-            }
-
-            // Sub-buzz
-            const subOsc = audioCtx.createOscillator();
-            subOsc.type = 'sine';
-            subOsc.frequency.value = 30;
-            const subGain = audioCtx.createGain();
-            subGain.gain.value = 0.06;
-            subOsc.connect(subGain);
-            subGain.connect(buzzGain);
-            subOsc.start();
-            buzzOscillators.push({ osc: subOsc, gain: subGain, baseFreq: 30 });
-
-            // Ambient noise
-            const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
-            const noiseData = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < noiseData.length; i++) {
-                noiseData[i] = (Math.random() * 2 - 1) * 0.08;
-            }
-            ambientNoiseNode = audioCtx.createBufferSource();
-            ambientNoiseNode.buffer = noiseBuffer;
-            ambientNoiseNode.loop = true;
-            const noiseFilter = audioCtx.createBiquadFilter();
-            noiseFilter.type = 'lowpass';
-            noiseFilter.frequency.value = 400;
-            const noiseGain = audioCtx.createGain();
-            noiseGain.gain.value = 0.06;
-            ambientNoiseNode.connect(noiseFilter);
-            noiseFilter.connect(noiseGain);
-            noiseGain.connect(masterGain);
-            ambientNoiseNode.start();
-
-            // Monster proximity
-            monsterProximityGain = audioCtx.createGain();
-            monsterProximityGain.gain.value = 0;
-            monsterProximityGain.connect(masterGain);
-
-            // Heartbeat
-            heartbeatNode = audioCtx.createOscillator();
-            heartbeatNode.type = 'sine';
-            heartbeatNode.frequency.value = 35;
-            const hbGain = audioCtx.createGain();
-            hbGain.gain.value = 0;
-            heartbeatNode.connect(hbGain);
-            hbGain.connect(monsterProximityGain);
-            heartbeatNode.start();
-            heartbeatNode._hbGain = hbGain;
+    function ensurePath(gx, gz, radius = 6) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dz = -radius; dz <= radius; dz++) {
+          if (Math.abs(dx) + Math.abs(dz) > radius) continue;
+          addCell(gx+dx, gz+dz);
         }
+      }
+    }
 
-        function updateAudio(dt, monsterDist) {
-            if (!audioCtx) return;
-            // Flicker buzz
-            const flicker = 1 + Math.sin(Date.now() * 0.013) * 0.15 + Math.sin(Date.now() * 0.037) * 0.2 + Math.sin(Date
-                .now() * 0.007) * 0.3;
-            buzzOscillators.forEach(b => {
-                b.gain.gain.value = (0.03 + Math.random() * 0.01) * Math.max(0.5, flicker);
-                if (Math.random() < 0.001) b.osc.frequency.value = b.baseFreq * (0.7 + Math.random() *
-                0.6);
-            });
+    // ────────────────────────────── МОНСТР (упрощён) ──────────────────────────────
+    let monsterGroup;
+    const monsterPos = new THREE.Vector3(0,0,-16);
+    function spawnMonster() {
+      monsterGroup = new THREE.Group();
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.4,1.4,6), matMonster);
+      torso.position.y = 1.5; monsterGroup.add(torso);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.35,6,4), matMonster);
+      head.position.y = 2.4; monsterGroup.add(head);
+      monsterGroup.add(monsterGlow);
+      monsterGroup.position.copy(monsterPos);
+      scene.add(monsterGroup);
+    }
 
-            // Monster proximity audio
-            const proximity = Math.max(0, 1 - monsterDist / 30);
-            monsterProximityGain.gain.value = proximity * 0.5;
-            if (heartbeatNode._hbGain) {
-                const hbVol = Math.max(0, (1 - monsterDist / 12)) * 0.8;
-                heartbeatNode._hbGain.gain.value = hbVol;
-                const hbRate = 0.6 + (1 - Math.min(1, monsterDist / 15)) * 1.8;
-                heartbeatNode.frequency.value = 35 + Math.sin(Date.now() * hbRate * 0.001) * 20 * Math.max(0, 1 -
-                    monsterDist / 10);
-            }
+    function moveMonster(dt, playerPos, looking) {
+      if (!monsterGroup) return 20;
+      const speed = looking ? 2.0 : 4.5;
+      const dir = playerPos.clone().sub(monsterPos); dir.y = 0;
+      const dist = dir.length();
+      if (dist < 0.7) return dist;
+      dir.normalize();
+      monsterPos.add(dir.multiplyScalar(Math.min(speed * dt, dist)));
+      monsterGroup.position.copy(monsterPos);
+      monsterGroup.lookAt(playerPos.x, 1.5, playerPos.z);
+      return dist;
+    }
+
+    // ────────────────────────────── ИГРОК ──────────────────────────────
+    const player = {
+      pos: new THREE.Vector3(0,1.7,0), yaw: 0, pitch: 0,
+      stamina: 100, sprint: false, speed: 3.5, dist: 0,
+      lastPos: new THREE.Vector3(0,1.7,0)
+    };
+    let gameStarted = false, gameOver = false, lock = false;
+    
+    function startGame() {
+      gameStarted = true; gameOver = false;
+      player.pos.set(0,1.7,0); player.yaw = 0; player.pitch = 0;
+      player.stamina = 100; player.dist = 0;
+      player.lastPos.copy(player.pos);
+      monsterPos.set(0,0,-16);
+      if (monsterGroup) { scene.remove(monsterGroup); monsterGroup = null; }
+      spawnMonster();
+      msgEl.classList.remove('show');
+      instrEl.style.opacity = '0';
+      // очистить старые клетки (простой способ – перезагрузка страницы лучше, но мы удалим)
+      cells.forEach(c => scene.remove(c.group));
+      cells.clear();
+      ensurePath(0,0,5);
+      canvas.requestPointerLock();
+    }
+
+    function endGame() {
+      gameOver = true; gameStarted = false;
+      document.exitPointerLock();
+      msgEl.textContent = 'ОН ДОГНАЛ';
+      msgEl.classList.add('show');
+      instrEl.style.opacity = '1';
+      setTimeout(() => { msgEl.classList.remove('show'); }, 2000);
+    }
+
+    // ────────────────────────────── УПРАВЛЕНИЕ ──────────────────────────────
+    const keys = {};
+    window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (e.key === 'Shift') player.sprint = true; });
+    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; if (e.key === 'Shift') player.sprint = false; });
+    let mouseX=0, mouseY=0;
+    document.addEventListener('mousemove', e => { if (lock) { mouseX += e.movementX; mouseY += e.movementY; } });
+    canvas.addEventListener('click', () => { if (!gameStarted) startGame(); else canvas.requestPointerLock(); });
+    document.addEventListener('pointerlockchange', () => { lock = document.pointerLockElement === canvas; });
+
+    // ────────────────────────────── VHS (БЫСТРЫЙ) ──────────────────────────────
+    const noiseCanvas = document.createElement('canvas');
+    noiseCanvas.width = 128; noiseCanvas.height = 128;
+    const nctx = noiseCanvas.getContext('2d');
+    const noiseData = nctx.createImageData(128,128);
+    for (let i=0; i<noiseData.data.length; i+=4) {
+      const v = Math.random()*30;
+      noiseData.data[i]=v; noiseData.data[i+1]=v; noiseData.data[i+2]=v; noiseData.data[i+3]=15;
+    }
+    nctx.putImageData(noiseData,0,0);
+    
+    function drawVHS(glitch) {
+      vhsCanvas.width = window.innerWidth; vhsCanvas.height = window.innerHeight;
+      const ctx = vhsCanvas;
+      ctx.clearRect(0,0,vhsCanvas.width, vhsCanvas.height);
+      // шумовая текстура со смещением
+      ctx.globalAlpha = 0.08 + glitch*0.1;
+      for (let y=0; y<vhsCanvas.height; y+=128) {
+        for (let x=0; x<vhsCanvas.width; x+=128) {
+          ctx.drawImage(noiseCanvas, x, y);
         }
-
-        // ==================== PROCEDURAL TEXTURES ====================
-        function createWallpaperTexture() {
-            const size = 256;
-            const c = document.createElement('canvas');
-            c.width = size;
-            c.height = size;
-            const ctx = c.getContext('2d');
-            // Base yellow
-            ctx.fillStyle = '#d4b96a';
-            ctx.fillRect(0, 0, size, size);
-            // Subtle pattern
-            for (let i = 0; i < 2000; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                ctx.fillStyle =
-                    `rgba(${180 + Math.random() * 40},${140 + Math.random() * 30},${60 + Math.random() * 30},${0.03 + Math.random() * 0.04})`;
-                ctx.fillRect(x, y, 3 + Math.random() * 8, 2 + Math.random() * 4);
-            }
-            // Vertical stripe suggestion
-            for (let x = 0; x < size; x += 32) {
-                ctx.fillStyle = 'rgba(0,0,0,0.02)';
-                ctx.fillRect(x + 14, 0, 4, size);
-            }
-            // Subtle dirt spots
-            for (let i = 0; i < 60; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                const r = 4 + Math.random() * 15;
-                const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-                grad.addColorStop(0, 'rgba(80,50,20,0.12)');
-                grad.addColorStop(1, 'rgba(80,50,20,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            return new THREE.CanvasTexture(c);
+      }
+      // случайные горизонтальные полосы
+      if (glitch > 0.1) {
+        ctx.globalAlpha = glitch*0.6;
+        for (let i=0; i<glitch*5; i++) {
+          const y = Math.random()*vhsCanvas.height;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, y, vhsCanvas.width, 2+Math.random()*8);
         }
+      }
+      ctx.globalAlpha = 1;
+    }
 
-        function createCarpetTexture() {
-            const size = 256;
-            const c = document.createElement('canvas');
-            c.width = size;
-            c.height = size;
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#6b5c48';
-            ctx.fillRect(0, 0, size, size);
-            for (let i = 0; i < 8000; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                const brightness = 80 + Math.random() * 60;
-                ctx.fillStyle =
-                    `rgba(${brightness},${brightness * 0.8},${brightness * 0.5},${0.04 + Math.random() * 0.05})`;
-                ctx.fillRect(x, y, 1.5 + Math.random() * 3, 1.5 + Math.random() * 3);
-            }
-            // Damp spots
-            for (let i = 0; i < 15; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                const r = 15 + Math.random() * 40;
-                const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-                grad.addColorStop(0, 'rgba(30,20,10,0.2)');
-                grad.addColorStop(1, 'rgba(30,20,10,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            const tex = new THREE.CanvasTexture(c);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(2, 2);
-            return tex;
+    // ────────────────────────────── ГЛАВНЫЙ ЦИКЛ ──────────────────────────────
+    let lastCell = {x:0, z:0};
+    let glitchAmt = 0;
+    
+    function loop() {
+      requestAnimationFrame(loop);
+      const dt = Math.min(0.1, 0.016); // фиксированный небольшой шаг для стабильности
+      
+      if (gameStarted && !gameOver) {
+        // поворот
+        player.yaw -= mouseX * 0.002;
+        player.pitch -= mouseY * 0.002;
+        player.pitch = Math.max(-1.4, Math.min(1.4, player.pitch));
+        mouseX = 0; mouseY = 0;
+        
+        // стамина
+        if (player.sprint && (keys['w']||keys['arrowup']) && player.stamina > 0) {
+          player.stamina -= 18*dt;
+          if (player.stamina < 0) player.stamina = 0;
+        } else {
+          player.stamina = Math.min(100, player.stamina + 12*dt);
         }
-
-        function createCeilingTexture() {
-            const size = 128;
-            const c = document.createElement('canvas');
-            c.width = size;
-            c.height = size;
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#e8e4d8';
-            ctx.fillRect(0, 0, size, size);
-            ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-            ctx.lineWidth = 1;
-            for (let x = 0; x < size; x += 32) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, size);
-                ctx.stroke();
+        const canSprint = player.sprint && player.stamina > 0 && (keys['w']||keys['arrowup']);
+        player.speed = canSprint ? 5.8 : 3.2;
+        
+        // движение
+        const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+        const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+        const move = new THREE.Vector3();
+        if (keys['w']||keys['arrowup']) move.add(forward);
+        if (keys['s']||keys['arrowdown']) move.sub(forward);
+        if (keys['a']||keys['arrowleft']) move.sub(right);
+        if (keys['d']||keys['arrowright']) move.add(right);
+        if (move.length() > 1) move.normalize();
+        player.pos.add(move.multiplyScalar(player.speed*dt));
+        player.pos.y = 1.7;
+        
+        // дистанция
+        player.dist += player.pos.distanceTo(player.lastPos);
+        player.lastPos.copy(player.pos);
+        distEl.textContent = `ДИСТАНЦИЯ: ${Math.floor(player.dist)}м`;
+        
+        // камера
+        camera.position.copy(player.pos);
+        camera.rotation.y = player.yaw;
+        camera.rotation.x = player.pitch;
+        
+        // генерация клеток при переходе в новую
+        const gx = Math.round(player.pos.x/CELL);
+        const gz = Math.round(player.pos.z/CELL);
+        if (gx !== lastCell.x || gz !== lastCell.z) {
+          ensurePath(gx, gz, 7);
+          // удаляем очень далёкие (редко)
+          cells.forEach((c, key) => {
+            const [cx, cz] = key.split(',').map(Number);
+            if (Math.abs(cx-gx)+Math.abs(cz-gz) > 9) {
+              scene.remove(c.group);
+              cells.delete(key);
             }
-            for (let y = 0; y < size; y += 32) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(size, y);
-                ctx.stroke();
-            }
-            // Water stains
-            for (let i = 0; i < 8; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                const grad = ctx.createRadialGradient(x, y, 0, x, y, 20 + Math.random() * 30);
-                grad.addColorStop(0, 'rgba(180,160,120,0.15)');
-                grad.addColorStop(1, 'rgba(180,160,120,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(x, y, 20 + Math.random() * 30, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            return new THREE.CanvasTexture(c);
+          });
+          lastCell = {x: gx, z: gz};
         }
-
-        function createMonsterTexture() {
-            const size = 512;
-            const c = document.createElement('canvas');
-            c.width = size;
-            c.height = size;
-            const ctx = c.getContext('2d');
-
-            // Dark flesh base
-            const baseGrad = ctx.createLinearGradient(0, 0, size, size);
-            baseGrad.addColorStop(0, '#3d1a1a');
-            baseGrad.addColorStop(0.3, '#4a2020');
-            baseGrad.addColorStop(0.5, '#331515');
-            baseGrad.addColorStop(0.7, '#452020');
-            baseGrad.addColorStop(1, '#2d1010');
-            ctx.fillStyle = baseGrad;
-            ctx.fillRect(0, 0, size, size);
-
-            // Organic mottling
-            for (let i = 0; i < 3000; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                const r = 2 + Math.random() * 18;
-                const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-                const shade = 30 + Math.random() * 80;
-                grad.addColorStop(0, `rgba(${shade + 30},${Math.floor(shade * 0.4)},${Math.floor(shade * 0.3)},0.5)`);
-                grad.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Vein-like lines
-            ctx.strokeStyle = 'rgba(80,20,20,0.4)';
-            ctx.lineWidth = 0.8;
-            for (let i = 0; i < 200; i++) {
-                ctx.beginPath();
-                let sx = Math.random() * size;
-                let sy = Math.random() * size;
-                ctx.moveTo(sx, sy);
-                for (let j = 0; j < 5; j++) {
-                    sx += (Math.random() - 0.5) * 60;
-                    sy += (Math.random() - 0.5) * 60;
-                    ctx.lineTo(sx, sy);
-                }
-                ctx.stroke();
-            }
-
-            // Wet/shiny spots
-            for (let i = 0; i < 80; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                const r = 3 + Math.random() * 10;
-                const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-                grad.addColorStop(0, 'rgba(255,200,180,0.25)');
-                grad.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Deep crevices
-            for (let i = 0; i < 30; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.beginPath();
-                ctx.ellipse(x, y, 3 + Math.random() * 12, 1 + Math.random() * 4, Math.random() * Math.PI, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            return new THREE.CanvasTexture(c);
-        }
-
-        function createMonsterFaceTexture() {
-            const size = 256;
-            const c = document.createElement('canvas');
-            c.width = size;
-            c.height = size;
-            const ctx = c.getContext('2d');
-
-            // Pale sickly skin
-            ctx.fillStyle = '#d4c8b8';
-            ctx.fillRect(0, 0, size, size);
-
-            // Mottling
-            for (let i = 0; i < 500; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
-                const grad = ctx.createRadialGradient(x, y, 0, x, y, 5 + Math.random() * 15);
-                grad.addColorStop(0, 'rgba(160,140,120,0.4)');
-                grad.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(x, y, 5 + Math.random() * 15, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Dark eye sockets
-            for (let ex = 0; ex < 2; ex++) {
-                const sx = size * 0.35 + ex * size * 0.3;
-                const sy = size * 0.38;
-                const grad = ctx.createRadialGradient(sx, sy, 8, sx, sy, 35);
-                grad.addColorStop(0, '#000000');
-                grad.addColorStop(0.5, '#1a0a05');
-                grad.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.ellipse(sx, sy, 30, 35, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Mouth area - stretched
-            const mouthGrad = ctx.createRadialGradient(size * 0.5, size * 0.62, 5, size * 0.5, size * 0.62, 40);
-            mouthGrad.addColorStop(0, '#1a0505');
-            mouthGrad.addColorStop(0.6, '#3a1510');
-            mouthGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = mouthGrad;
-            ctx.beginPath();
-            ctx.ellipse(size * 0.5, size * 0.62, 35, 15, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Subtle lines
-            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-            ctx.lineWidth = 0.5;
-            for (let i = 0; i < 40; i++) {
-                ctx.beginPath();
-                ctx.moveTo(Math.random() * size, Math.random() * size);
-                ctx.quadraticCurveTo(Math.random() * size, Math.random() * size, Math.random() * size, Math.random() *
-                    size);
-                ctx.stroke();
-            }
-
-            return new THREE.CanvasTexture(c);
-        }
-
-        // ==================== MATERIALS ====================
-        const wallpaperTex = createWallpaperTexture();
-        wallpaperTex.wrapS = THREE.RepeatWrapping;
-        wallpaperTex.wrapT = THREE.RepeatWrapping;
-        wallpaperTex.repeat.set(1, 1.5);
-        wallpaperTex.colorSpace = THREE.SRGBColorSpace;
-
-        const carpetTex = createCarpetTexture();
-        carpetTex.colorSpace = THREE.SRGBColorSpace;
-
-        const ceilingTex = createCeilingTexture();
-        ceilingTex.wrapS = THREE.RepeatWrapping;
-        ceilingTex.wrapT = THREE.RepeatWrapping;
-        ceilingTex.repeat.set(2, 2);
-        ceilingTex.colorSpace = THREE.SRGBColorSpace;
-
-        const monsterTex = createMonsterTexture();
-        monsterTex.colorSpace = THREE.SRGBColorSpace;
-        const monsterFaceTex = createMonsterFaceTexture();
-        monsterFaceTex.colorSpace = THREE.SRGBColorSpace;
-
-        const wallMaterial = new THREE.MeshStandardMaterial({
-            map: wallpaperTex,
-            roughness: 0.75,
-            metalness: 0.02,
-            color: '#e8d59c',
-        });
-
-        const floorMaterial = new THREE.MeshStandardMaterial({
-            map: carpetTex,
-            roughness: 0.9,
-            metalness: 0,
-            color: '#7a6b55',
-        });
-
-        const ceilingMaterial = new THREE.MeshStandardMaterial({
-            map: ceilingTex,
-            roughness: 0.8,
-            metalness: 0.03,
-            color: '#e8e2d4',
-        });
-
-        const monsterBodyMat = new THREE.MeshStandardMaterial({
-            map: monsterTex,
-            roughness: 0.35,
-            metalness: 0.05,
-            color: '#cc9988',
-        });
-
-        const monsterFaceMat = new THREE.MeshStandardMaterial({
-            map: monsterFaceTex,
-            roughness: 0.4,
-            metalness: 0.02,
-            color: '#ddd0c0',
-        });
-
-        const lightMaterial = new THREE.MeshStandardMaterial({
-            color: '#fffef5',
-            roughness: 0.2,
-            metalness: 0.1,
-            emissive: '#fffef0',
-            emissiveIntensity: 1.8,
-        });
-
-        // ==================== LIGHTING ====================
-        const ambientLight = new THREE.AmbientLight('#3d3020', 0.5);
-        scene.add(ambientLight);
-
-        const overheadLight = new THREE.PointLight('#fffbe8', 40, 8, 1.5);
-        overheadLight.position.set(0, 2.7, 0);
-        overheadLight.castShadow = true;
-        overheadLight.shadow.mapSize.width = 256;
-        overheadLight.shadow.mapSize.height = 256;
-        overheadLight.shadow.camera.near = 0.1;
-        overheadLight.shadow.camera.far = 15;
-        overheadLight.shadow.bias = -0.002;
-        // We'll reposition this light dynamically
-
-        // ==================== CORRIDOR SYSTEM ====================
-        const CORRIDOR_WIDTH = 3.2;
-        const CORRIDOR_HEIGHT = 3.0;
-        const CELL_SIZE = 4.0;
-        const WALL_THICKNESS = 0.2;
-
-        // Grid-based corridor network
-        const corridorCells = new Map(); // key: "x,z" -> { x, z, connections: {n,s,e,w}, meshGroup, lightObj, lightFlicker }
-        const activeCorridorMeshes = [];
-
-        function cellKey(x, z) { return `${Math.round(x)},${Math.round(z)}`; }
-
-        function getCell(x, z) { return corridorCells.get(cellKey(x, z)); }
-
-        function setCell(x, z, data) { corridorCells.set(cellKey(x, z), data); }
-
-        function getGridPos(worldX, worldZ) {
-            return {
-                gx: Math.round(worldX / CELL_SIZE),
-                gz: Math.round(worldZ / CELL_SIZE)
-            };
-        }
-
-        function worldToGrid(wx, wz) {
-            return {
-                gx: Math.round(wx / CELL_SIZE),
-                gz: Math.round(wz / CELL_SIZE)
-            };
-        }
-
-        function gridToWorld(gx, gz) {
-            return {
-                wx: gx * CELL_SIZE,
-                wz: gz * CELL_SIZE
-            };
-        }
-
-        function getConnections(gx, gz) {
-            const conn = { n: false, s: false, e: false, w: false };
-            if (getCell(gx, gz - 1)) conn.n = true;
-            if (getCell(gx, gz + 1)) conn.s = true;
-            if (getCell(gx + 1, gz)) conn.e = true;
-            if (getCell(gx - 1, gz)) conn.w = true;
-            return conn;
-        }
-
-        function countConnections(conn) {
-            return (conn.n ? 1 : 0) + (conn.s ? 1 : 0) + (conn.e ? 1 : 0) + (conn.w ? 1 : 0);
-        }
-
-        function createCorridorMesh(gx, gz, connections) {
-            const group = new THREE.Group();
-            const wx = gx * CELL_SIZE;
-            const wz = gz * CELL_SIZE;
-            const hw = CORRIDOR_WIDTH / 2;
-            const hh = CORRIDOR_HEIGHT / 2;
-            const wt = WALL_THICKNESS;
-
-            // Floor
-            const floorGeo = new THREE.PlaneGeometry(CORRIDOR_WIDTH, CELL_SIZE);
-            const floor = new THREE.Mesh(floorGeo, floorMaterial);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.set(wx, 0.01, wz);
-            floor.receiveShadow = true;
-            group.add(floor);
-
-            // Ceiling
-            const ceilGeo = new THREE.PlaneGeometry(CORRIDOR_WIDTH, CELL_SIZE);
-            const ceil = new THREE.Mesh(ceilGeo, ceilingMaterial);
-            ceil.rotation.x = Math.PI / 2;
-            ceil.position.set(wx, CORRIDOR_HEIGHT, wz);
-            group.add(ceil);
-
-            // Walls based on connections
-            const wallConfigs = [
-                { cond: !connections.n, pos: [wx, hh, wz - CELL_SIZE / 2], rot: [0, 0, 0], size: [CORRIDOR_WIDTH,
-                        CORRIDOR_HEIGHT, wt
-                    ] },
-                { cond: !connections.s, pos: [wx, hh, wz + CELL_SIZE / 2], rot: [0, 0, 0], size: [CORRIDOR_WIDTH,
-                        CORRIDOR_HEIGHT, wt
-                    ] },
-                { cond: !connections.e, pos: [wx + CELL_SIZE / 2, hh, wz], rot: [0, Math.PI / 2, 0],
-                    size: [CORRIDOR_WIDTH, CORRIDOR_HEIGHT, wt] },
-                { cond: !connections.w, pos: [wx - CELL_SIZE / 2, hh, wz], rot: [0, Math.PI / 2, 0],
-                    size: [CORRIDOR_WIDTH, CORRIDOR_HEIGHT, wt] },
-            ];
-
-            wallConfigs.forEach(config => {
-                if (config.cond) {
-                    const wallGeo = new THREE.BoxGeometry(...config.size);
-                    const wall = new THREE.Mesh(wallGeo, wallMaterial);
-                    wall.position.set(...config.pos);
-                    wall.rotation.set(...config.rot);
-                    wall.castShadow = true;
-                    wall.receiveShadow = true;
-                    group.add(wall);
-                }
-            });
-
-            // Fluorescent light fixture
-            const lightFixtureGeo = new THREE.BoxGeometry(0.8, 0.08, 1.6);
-            const lightFixture = new THREE.Mesh(lightFixtureGeo, lightMaterial);
-            lightFixture.position.set(wx, CORRIDOR_HEIGHT - 0.08, wz);
-            group.add(lightFixture);
-
-            // Point light
-            const ptLight = new THREE.PointLight('#fffef5', 8, 6, 1.5);
-            ptLight.position.set(wx, CORRIDOR_HEIGHT - 0.2, wz);
-            ptLight.castShadow = false;
-            group.add(ptLight);
-
-            return {
-                group,
-                pointLight: ptLight,
-                lightFixture,
-                flickerOffset: Math.random() * Math.PI * 2,
-                flickerSpeed: 0.5 + Math.random() * 3,
-                baseIntensity: 6 + Math.random() * 6,
-            };
-        }
-
-        function generateCorridorCell(gx, gz) {
-            if (getCell(gx, gz)) return;
-            const connections = getConnections(gx, gz);
-            const meshData = createCorridorMesh(gx, gz, connections);
-            const cellData = {
-                gx,
-                gz,
-                connections: { ...connections },
-                meshGroup: meshData.group,
-                pointLight: meshData.pointLight,
-                lightFixture: meshData.lightFixture,
-                flickerOffset: meshData.flickerOffset,
-                flickerSpeed: meshData.flickerSpeed,
-                baseIntensity: meshData.baseIntensity,
-            };
-            setCell(gx, gz, cellData);
-            scene.add(meshData.group);
-            activeCorridorMeshes.push(cellData);
-            return cellData;
-        }
-
-        function ensureCorridorAt(gx, gz) {
-            if (!getCell(gx, gz)) {
-                generateCorridorCell(gx, gz);
-                // Update neighbors' walls
-                updateNeighborWalls(gx, gz);
-            }
-        }
-
-        function updateNeighborWalls(gx, gz) {
-            const neighbors = [
-                { ngx: gx, ngz: gz - 1 },
-                { ngx: gx, ngz: gz + 1 },
-                { ngx: gx + 1, ngz: gz },
-                { ngx: gx - 1, ngz: gz },
-            ];
-            neighbors.forEach(({ ngx, ngz }) => {
-                const cell = getCell(ngx, ngz);
-                if (cell) {
-                    rebuildCellMesh(cell);
-                }
-            });
-        }
-
-        function rebuildCellMesh(cellData) {
-            const conn = getConnections(cellData.gx, cellData.gz);
-            cellData.connections = { ...conn };
-            // Remove old mesh
-            scene.remove(cellData.meshGroup);
-            disposeGroup(cellData.meshGroup);
-            const idx = activeCorridorMeshes.indexOf(cellData);
-            if (idx >= 0) activeCorridorMeshes.splice(idx, 1);
-            // Create new
-            const newMesh = createCorridorMesh(cellData.gx, cellData.gz, conn);
-            cellData.meshGroup = newMesh.group;
-            cellData.pointLight = newMesh.pointLight;
-            cellData.lightFixture = newMesh.lightFixture;
-            cellData.flickerOffset = newMesh.flickerOffset;
-            cellData.flickerSpeed = newMesh.flickerSpeed;
-            cellData.baseIntensity = newMesh.baseIntensity;
-            scene.add(newMesh.group);
-            activeCorridorMeshes.push(cellData);
-        }
-
-        function disposeGroup(group) {
-            group.traverse(child => {
-                if (child.geometry && child.geometry !== floorMaterial.map?.image?.geometry) {
-                    child.geometry.dispose();
-                }
-            });
-        }
-
-        function removeFarCells(playerGx, playerGz, maxDist = 8) {
-            const toRemove = [];
-            corridorCells.forEach((cell, key) => {
-                const dist = Math.abs(cell.gx - playerGx) + Math.abs(cell.gz - playerGz);
-                if (dist > maxDist) {
-                    toRemove.push(key);
-                }
-            });
-            toRemove.forEach(key => {
-                const cell = corridorCells.get(key);
-                scene.remove(cell.meshGroup);
-                disposeGroup(cell.meshGroup);
-                const idx = activeCorridorMeshes.indexOf(cell);
-                if (idx >= 0) activeCorridorMeshes.splice(idx, 1);
-                corridorCells.delete(key);
-            });
-        }
-
-        // ==================== PROCEDURAL PATH GENERATION ====================
-        const generatedCells = new Set();
-        let mainPathDirection = { x: 0, z: 1 }; // Current general direction
-        let pathEndpoint = { gx: 0, gz: 0 };
-
-        function generateAhead(playerGx, playerGz, lookDirX, lookDirZ) {
-            // Update main path direction based on player look
-            const adx = Math.abs(lookDirX);
-            const adz = Math.abs(lookDirZ);
-            if (adx > adz) {
-                mainPathDirection = { x: Math.sign(lookDirX) || 1, z: 0 };
-            } else {
-                mainPathDirection = { x: 0, z: Math.sign(lookDirZ) || 1 };
-            }
-
-            // Ensure cells exist in a radius around the player
-            const radius = 7;
-            for (let dx = -radius; dx <= radius; dx++) {
-                for (let dz = -radius; dz <= radius; dz++) {
-                    const gx = playerGx + dx;
-                    const gz = playerGz + dz;
-                    const dist = Math.abs(dx) + Math.abs(dz);
-                    if (dist <= radius) {
-                        // Higher chance of corridor near the main path
-                        const alongMain = Math.abs(dx * mainPathDirection.x + dz * mainPathDirection.z);
-                        const perpDist = Math.abs(dx * (1 - Math.abs(mainPathDirection.x)) + dz * (1 - Math.abs(
-                            mainPathDirection.z)));
-                        const chance = dist <= 3 ? 0.95 : (alongMain > perpDist ? 0.7 : 0.25);
-                        if (Math.random() < chance || dist <= 2) {
-                            ensureCorridorAt(gx, gz);
-                            generatedCells.add(cellKey(gx, gz));
-                        }
-                    }
-                }
-            }
-
-            // Ensure the main path continues forward
-            let curGx = playerGx;
-            let curGz = playerGz;
-            for (let i = 0; i < radius + 2; i++) {
-                curGx += mainPathDirection.x;
-                curGz += mainPathDirection.z;
-                ensureCorridorAt(curGx, curGz);
-                generatedCells.add(cellKey(curGx, curGz));
-                // Occasionally branch
-                if (Math.random() < 0.3 && i > 2) {
-                    const branchDir = mainPathDirection.x === 0 ?
-                        { x: (Math.random() < 0.5 ? -1 : 1), z: 0 } :
-                        { x: 0, z: (Math.random() < 0.5 ? -1 : 1) };
-                    let bgx = curGx + branchDir.x;
-                    let bgz = curGz + branchDir.z;
-                    for (let j = 0; j < 3 + Math.floor(Math.random() * 4); j++) {
-                        ensureCorridorAt(bgx, bgz);
-                        generatedCells.add(cellKey(bgx, bgz));
-                        bgx += branchDir.x;
-                        bgz += branchDir.z;
-                        if (Math.random() < 0.4) break;
-                    }
-                }
-            }
-            pathEndpoint = { gx: curGx, gz: curGz };
-        }
-
-        function ensureConnectivity(playerGx, playerGz) {
-            // BFS from player to make sure all nearby cells are reachable
-            const visited = new Set();
-            const queue = [{ gx: playerGx, gz: playerGz }];
-            visited.add(cellKey(playerGx, playerGz));
-            while (queue.length > 0) {
-                const { gx, gz } = queue.shift();
-                const neighbors = [{ gx: gx, gz: gz - 1 }, { gx: gx, gz: gz + 1 }, { gx: gx + 1, gz: gz }, { gx: gx - 1,
-                    gz: gz }];
-                neighbors.forEach(n => {
-                    const nk = cellKey(n.gx, n.gz);
-                    if (!visited.has(nk) && getCell(n.gx, n.gz)) {
-                        visited.add(nk);
-                        queue.push(n);
-                    }
-                });
-            }
-            // If any nearby generated cell is unreachable, connect it
-            const checkRadius = 6;
-            for (let dx = -checkRadius; dx <= checkRadius; dx++) {
-                for (let dz = -checkRadius; dz <= checkRadius; dz++) {
-                    const gx = playerGx + dx;
-                    const gz = playerGz + dz;
-                    const nk = cellKey(gx, gz);
-                    if (getCell(gx, gz) && !visited.has(nk) && Math.abs(dx) + Math.abs(dz) <= checkRadius) {
-                        // Connect by building a path toward the nearest visited cell
-                        let bestDist = Infinity;
-                        let bestTarget = null;
-                        visited.forEach(vk => {
-                            const [vx, vz] = vk.split(',').map(Number);
-                            const d = Math.abs(gx - vx) + Math.abs(gz - vz);
-                            if (d < bestDist) {
-                                bestDist = d;
-                                bestTarget = { gx: vx, gz: vz };
-                            }
-                        });
-                        if (bestTarget && bestDist <= 4) {
-                            // Build a simple L-shaped path
-                            let cx = gx;
-                            let cz = gz;
-                            while (cx !== bestTarget.gx) {
-                                cx += Math.sign(bestTarget.gx - cx);
-                                ensureCorridorAt(cx, cz);
-                            }
-                            while (cz !== bestTarget.gz) {
-                                cz += Math.sign(bestTarget.gz - cz);
-                                ensureCorridorAt(cx, cz);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ==================== MONSTER ====================
-        let monsterGroup = null;
-        let monsterGridPos = { gx: 0, gz: -6 };
-        let monsterWorldPos = new THREE.Vector3(0, 0, -6 * CELL_SIZE);
-        let monsterTargetPath = [];
-        let monsterSpeed = 3.2;
-        let monsterBaseSpeed = 3.2;
-        let monsterFastSpeed = 5.5;
-
-        function createMonster() {
-            monsterGroup = new THREE.Group();
-
-            // Torso
-            const torsoGeo = new THREE.CylinderGeometry(0.35, 0.4, 1.5, 12, 8);
-            const torso = new THREE.Mesh(torsoGeo, monsterBodyMat);
-            torso.position.y = 1.6;
-            torso.castShadow = true;
-            monsterGroup.add(torso);
-
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.35, 16, 14);
-            // Deform head slightly
-            const posAttr = headGeo.getAttribute('position');
-            for (let i = 0; i < posAttr.count; i++) {
-                const x = posAttr.getX(i);
-                const y = posAttr.getY(i);
-                const z = posAttr.getZ(i);
-                const deform = 1 + Math.sin(y * 5) * 0.15 + Math.cos(x * 4) * 0.1;
-                posAttr.setXYZ(i, x * deform, y * (1 + 0.2 * Math.abs(y)), z * deform);
-            }
-            headGeo.computeVertexNormals();
-            const head = new THREE.Mesh(headGeo, monsterFaceMat);
-            head.position.y = 2.55;
-            head.scale.set(1, 1.15, 1);
-            head.castShadow = true;
-            monsterGroup.add(head);
-
-            // Arms
-            for (let side = -1; side <= 1; side += 2) {
-                const upperArmGeo = new THREE.CylinderGeometry(0.1, 0.12, 0.9, 8, 6);
-                const upperArm = new THREE.Mesh(upperArmGeo, monsterBodyMat);
-                upperArm.position.set(side * 0.45, 2.0, 0);
-                upperArm.rotation.z = side * 0.3;
-                upperArm.castShadow = true;
-                monsterGroup.add(upperArm);
-
-                const lowerArmGeo = new THREE.CylinderGeometry(0.07, 0.1, 0.85, 8, 6);
-                const lowerArm = new THREE.Mesh(lowerArmGeo, monsterBodyMat);
-                lowerArm.position.set(side * 0.55, 1.25, 0.15);
-                lowerArm.rotation.z = side * 0.5;
-                lowerArm.castShadow = true;
-                monsterGroup.add(lowerArm);
-
-                // Long fingers
-                for (let f = 0; f < 3; f++) {
-                    const fingerGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.35, 6, 4);
-                    const finger = new THREE.Mesh(fingerGeo, monsterBodyMat);
-                    finger.position.set(side * 0.6 + f * side * 0.08, 0.7, 0.2 + f * 0.1);
-                    finger.rotation.z = side * 0.8;
-                    finger.rotation.x = -0.4;
-                    monsterGroup.add(finger);
-                }
-            }
-
-            // Legs
-            for (let side = -1; side <= 1; side += 2) {
-                const upperLegGeo = new THREE.CylinderGeometry(0.13, 0.15, 0.9, 8, 6);
-                const upperLeg = new THREE.Mesh(upperLegGeo, monsterBodyMat);
-                upperLeg.position.set(side * 0.2, 0.8, 0);
-                upperLeg.castShadow = true;
-                monsterGroup.add(upperLeg);
-
-                const lowerLegGeo = new THREE.CylinderGeometry(0.08, 0.12, 0.85, 8, 6);
-                const lowerLeg = new THREE.Mesh(lowerLegGeo, monsterBodyMat);
-                lowerLeg.position.set(side * 0.22, 0.05, 0);
-                lowerLeg.castShadow = true;
-                monsterGroup.add(lowerLeg);
-            }
-
-            monsterGroup.scale.set(1, 1, 1);
-            monsterGroup.position.copy(monsterWorldPos);
-            monsterGroup.visible = true;
-            scene.add(monsterGroup);
-
-            // Subtle glow
-            const glowLight = new THREE.PointLight('#331111', 3, 5, 2);
-            glowLight.position.y = 1.5;
-            monsterGroup.add(glowLight);
-            monsterGroup.userData.glowLight = glowLight;
-        }
-
-        function updateMonsterPosition() {
-            if (!monsterGroup) return;
-            const targetGrid = worldToGrid(monsterWorldPos.x, monsterWorldPos.z);
-            monsterGridPos = targetGrid;
-            monsterGroup.position.copy(monsterWorldPos);
-            monsterGroup.position.y = 0;
-        }
-
-        function findPathToPlayer(fromGx, fromGz, toGx, toGz) {
-            // BFS pathfinding on corridor grid
-            const visited = new Set();
-            const queue = [{ gx: fromGx, gz: fromGz, path: [] }];
-            visited.add(cellKey(fromGx, fromGz));
-            const maxSteps = 40;
-            while (queue.length > 0) {
-                const { gx, gz, path } = queue.shift();
-                if (gx === toGx && gz === toGz) return path;
-                if (path.length >= maxSteps) continue;
-                const neighbors = [
-                    { gx: gx, gz: gz - 1, dir: 'n' },
-                    { gx: gx, gz: gz + 1, dir: 's' },
-                    { gx: gx + 1, gz: gz, dir: 'e' },
-                    { gx: gx - 1, gz: gz, dir: 'w' },
-                ];
-                neighbors.forEach(n => {
-                    const nk = cellKey(n.gx, n.gz);
-                    if (!visited.has(nk) && getCell(n.gx, n.gz)) {
-                        visited.add(nk);
-                        queue.push({ gx: n.gx, gz: n.gz, path: [...path, { gx: n.gx, gz: n.gz }] });
-                    }
-                });
-            }
-            return null; // No path found
-        }
-
-        function updateMonsterAI(playerGx, playerGz, playerWorldPos, dt, playerLookingAtMonster) {
-            if (!monsterGroup) return;
-            const mGrid = worldToGrid(monsterWorldPos.x, monsterWorldPos.z);
-
-            // Recalculate path periodically
-            if (!monsterTargetPath.length || Math.random() < 0.05) {
-                const path = findPathToPlayer(mGrid.gx, mGrid.gz, playerGx, playerGz);
-                if (path && path.length > 0) {
-                    monsterTargetPath = path;
-                } else if (path && path.length === 0) {
-                    monsterTargetPath = [{ gx: playerGx, gz: playerGz }];
-                }
-            }
-
-            // Move along path
-            let targetWorldPos;
-            if (monsterTargetPath.length > 0) {
-                const next = monsterTargetPath[0];
-                const world = gridToWorld(next.gx, next.gz);
-                targetWorldPos = new THREE.Vector3(world.wx, 0, world.wz);
-                const distToTarget = monsterWorldPos.distanceTo(targetWorldPos);
-                if (distToTarget < 0.5) {
-                    monsterTargetPath.shift();
-                }
-            } else {
-                targetWorldPos = new THREE.Vector3(playerWorldPos.x, 0, playerWorldPos.z);
-            }
-
-            // Speed based on whether player is looking
-            const effectiveSpeed = playerLookingAtMonster ? monsterBaseSpeed * 0.6 : monsterFastSpeed;
-
-            // Move toward target
-            const dir = targetWorldPos.clone().sub(monsterWorldPos);
-            dir.y = 0;
-            const dist = dir.length();
-            if (dist > 0.01) {
-                dir.normalize();
-                const step = Math.min(effectiveSpeed * dt, dist);
-                monsterWorldPos.add(dir.multiplyScalar(step));
-            }
-
-            updateMonsterPosition();
-
-            // Animate monster (subtle bobbing)
-            const bob = Math.sin(Date.now() * 0.004) * 0.3;
-            monsterGroup.position.y = bob;
-            monsterGroup.rotation.y = Math.atan2(dir.x, dir.z) + Math.sin(Date.now() * 0.003) * 0.2;
-
-            // Glow intensity based on proximity
-            const distToPlayer = monsterWorldPos.distanceTo(playerWorldPos);
-            if (monsterGroup.userData.glowLight) {
-                monsterGroup.userData.glowLight.intensity = 1 + Math.max(0, (15 - distToPlayer)) * 1.5;
-            }
-
-            return distToPlayer;
-        }
-
-        function isPlayerLookingAtMonster(playerPos, playerLookDir) {
-            if (!monsterGroup) return false;
-            const toMonster = monsterWorldPos.clone().sub(playerPos);
-            toMonster.y = 0;
-            const dist = toMonster.length();
-            if (dist > 25) return false;
-            toMonster.normalize();
-            const lookHoriz = new THREE.Vector3(playerLookDir.x, 0, playerLookDir.z).normalize();
-            const dot = toMonster.dot(lookHoriz);
-            const angle = Math.acos(Math.min(1, Math.max(-1, dot)));
-            const fovThreshold = 0.55; // About 33 degrees half-angle
-            return angle < fovThreshold && dist < 20;
-        }
-
-        // ==================== PLAYER STATE ====================
-        const playerState = {
-            position: new THREE.Vector3(0, 1.7, 0),
-            velocity: new THREE.Vector3(),
-            yaw: 0,
-            pitch: 0,
-            stamina: 100,
-            maxStamina: 100,
-            isSprinting: false,
-            staminaRegenRate: 15,
-            staminaDrainRate: 22,
-            walkSpeed: 3.5,
-            sprintSpeed: 6.5,
-            isLocked: false,
-            gameStarted: false,
-            gameOver: false,
-            distanceRun: 0,
-            lastPosition: new THREE.Vector3(0, 0, 0),
-        };
-
-        // ==================== INPUT ====================
-        const keys = {};
-        let mouseDX = 0;
-        let mouseDY = 0;
-
-        window.addEventListener('keydown', e => {
-            keys[e.key.toLowerCase()] = true;
-            if (e.key.toLowerCase() === 'shift') playerState.isSprinting = true;
-        });
-        window.addEventListener('keyup', e => {
-            keys[e.key.toLowerCase()] = false;
-            if (e.key.toLowerCase() === 'shift') playerState.isSprinting = false;
-        });
-
-        canvas.addEventListener('click', () => {
-            if (!playerState.gameStarted && !playerState.gameOver) {
-                startGame();
-            }
-            if (!playerState.gameOver && playerState.gameStarted) {
-                canvas.requestPointerLock();
-            }
-        });
-
-        document.addEventListener('pointerlockchange', () => {
-            playerState.isLocked = document.pointerLockElement === canvas;
-            if (!playerState.isLocked && playerState.gameStarted && !playerState.gameOver) {
-                // Show a subtle pause hint
-            }
-        });
-
-        document.addEventListener('mousemove', e => {
-            if (playerState.isLocked) {
-                mouseDX += e.movementX;
-                mouseDY += e.movementY;
-            }
-        });
-
-        // ==================== GAME FUNCTIONS ====================
-        function startGame() {
-            initAudio();
-            playerState.gameStarted = true;
-            playerState.gameOver = false;
-            playerState.position.set(0, 1.7, 0);
-            playerState.yaw = 0;
-            playerState.pitch = 0;
-            playerState.stamina = playerState.maxStamina;
-            playerState.distanceRun = 0;
-            playerState.lastPosition.copy(playerState.position);
-            monsterWorldPos.set(0, 0, -6 * CELL_SIZE);
-            monsterTargetPath = [];
-            instructionEl.style.opacity = '0';
-            messageEl.classList.remove('visible');
-
-            // Clear old corridors
-            corridorCells.forEach((cell, key) => {
-                scene.remove(cell.meshGroup);
-                disposeGroup(cell.meshGroup);
-            });
-            corridorCells.clear();
-            activeCorridorMeshes.length = 0;
-            generatedCells.clear();
-
-            // Create initial corridor
-            mainPathDirection = { x: 0, z: 1 };
-            for (let dz = -4; dz <= 6; dz++) {
-                for (let dx = -3; dx <= 3; dx++) {
-                    if (Math.abs(dx) + Math.abs(dz) <= 5 || (dz > 0 && Math.abs(dx) <= 1)) {
-                        ensureCorridorAt(dx, dz);
-                        generatedCells.add(cellKey(dx, dz));
-                    }
-                }
-            }
-            ensureConnectivity(0, 0);
-
-            // Create monster
-            if (monsterGroup) {
-                scene.remove(monsterGroup);
-                disposeGroup(monsterGroup);
-            }
-            createMonster();
-            updateMonsterPosition();
-
-            // Generate ahead
-            generateAhead(0, 0, 0, 1);
-
-            canvas.requestPointerLock();
-        }
-
-        function triggerGameOver() {
-            playerState.gameOver = true;
-            document.exitPointerLock();
-            messageEl.textContent = 'IT GOT YOU';
-            messageEl.classList.add('visible');
-
-            // Screen shake effect via VHS
-            triggerVhsGlitch(1.0);
-
-            setTimeout(() => {
-                messageEl.classList.remove('visible');
-                messageEl.textContent = '';
-                instructionEl.style.opacity = '1';
-                instructionEl.innerHTML =
-                    'CLICK TO TRY AGAIN<br>WASD - MOVE &nbsp; SHIFT - SPRINT<br>MOUSE - LOOK';
-                playerState.gameStarted = false;
-                playerState.gameOver = false;
-                if (monsterGroup) {
-                    scene.remove(monsterGroup);
-                    disposeGroup(monsterGroup);
-                    monsterGroup = null;
-                }
-            }, 2500);
-        }
-
-        // ==================== VHS EFFECT ====================
-        let vhsGlitchAmount = 0;
-        let vhsGlitchDecay = 0.9;
-
-        function triggerVhsGlitch(intensity) {
-            vhsGlitchAmount = Math.max(vhsGlitchAmount, intensity);
-        }
-
-        function updateVHSOverlay() {
-            vhsCanvas.width = window.innerWidth;
-            vhsCanvas.height = window.innerHeight;
-            const ctx = vhsCtx;
-            const w = vhsCanvas.width;
-            const h = vhsCanvas.height;
-
-            ctx.clearRect(0, 0, w, h);
-
-            // Chromatic aberration simulation - subtle color fringing
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = 'rgba(255,60,30,0.015)';
-            ctx.fillRect(2, 0, w, h);
-            ctx.fillStyle = 'rgba(30,180,255,0.015)';
-            ctx.fillRect(-2, 0, w, h);
-
-            // Random horizontal glitch bars
-            const glitchCount = Math.floor(vhsGlitchAmount * 8 + Math.random() * 2);
-            for (let i = 0; i < glitchCount; i++) {
-                const y = Math.random() * h;
-                const barH = 2 + Math.random() * 20 * vhsGlitchAmount;
-                const shiftX = (Math.random() - 0.5) * 40 * vhsGlitchAmount;
-                ctx.fillStyle =
-                    `rgba(${180 + Math.random() * 75},${100 + Math.random() * 50},${30 + Math.random() * 40},${0.15 + vhsGlitchAmount * 0.4})`;
-                ctx.fillRect(shiftX, y, w + Math.abs(shiftX), barH);
-            }
-
-            // Tracking distortion
-            if (vhsGlitchAmount > 0.3) {
-                const trackY = Math.random() * h;
-                const skew = (Math.random() - 0.5) * 30 * vhsGlitchAmount;
-                ctx.save();
-                ctx.transform(1, 0, skew / h, 1, 0, 0);
-                ctx.fillStyle = 'rgba(255,255,255,0.03)';
-                ctx.fillRect(0, trackY - 10, w, 20);
-                ctx.restore();
-            }
-
-            // Film grain
-            const grainIntensity = 0.03 + vhsGlitchAmount * 0.08;
-            const imageData = ctx.getImageData(0, 0, w, h);
-            const data = imageData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                const grain = (Math.random() - 0.5) * grainIntensity * 255;
-                data[i] = Math.min(255, Math.max(0, data[i] + grain));
-                data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + grain));
-                data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + grain));
-            }
-            ctx.putImageData(imageData, 0, 0);
-
-            // Vignette on overlay
-            const vignetteGrad = ctx.createRadialGradient(w / 2, h / 2, w * 0.35, w / 2, h / 2, w * 0.75);
-            vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
-            vignetteGrad.addColorStop(0.5, 'rgba(0,0,0,0.08)');
-            vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.5)');
-            ctx.fillStyle = vignetteGrad;
-            ctx.fillRect(0, 0, w, h);
-
-            // Decay glitch
-            vhsGlitchAmount *= vhsGlitchDecay;
-            if (vhsGlitchAmount < 0.001) vhsGlitchAmount = 0;
-        }
-
-        // ==================== GAME LOOP ====================
-        const clock = new THREE.Clock();
-        let lastMonsterDist = 20;
-
-        function update(dt) {
-            if (!playerState.gameStarted || playerState.gameOver) {
-                // Still update VHS
-                updateVHSOverlay();
-                return;
-            }
-
-            // Clamp dt
-            const clampedDt = Math.min(dt, 0.2);
-
-            // Mouse look
-            const sensitivity = 0.002;
-            playerState.yaw -= mouseDX * sensitivity;
-            playerState.pitch -= mouseDY * sensitivity;
-            playerState.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, playerState.pitch));
-            mouseDX = 0;
-            mouseDY = 0;
-
-            // Sprint
-            if (playerState.isSprinting && playerState.stamina > 0 && (keys['w'] || keys['arrowup'])) {
-                playerState.stamina -= playerState.staminaDrainRate * clampedDt;
-                if (playerState.stamina < 0) playerState.stamina = 0;
-            } else {
-                playerState.stamina += playerState.staminaRegenRate * clampedDt;
-                if (playerState.stamina > playerState.maxStamina) playerState.stamina = playerState.maxStamina;
-            }
-            const canSprint = playerState.isSprinting && playerState.stamina > 0 && (keys['w'] || keys['arrowup']);
-            const currentSpeed = canSprint ? playerState.sprintSpeed : playerState.walkSpeed;
-
-            // Movement
-            const forward = new THREE.Vector3(-Math.sin(playerState.yaw), 0, -Math.cos(playerState.yaw)).normalize();
-            const right = new THREE.Vector3(Math.cos(playerState.yaw), 0, -Math.sin(playerState.yaw)).normalize();
-
-            const moveDir = new THREE.Vector3();
-            if (keys['w'] || keys['arrowup']) moveDir.add(forward);
-            if (keys['s'] || keys['arrowdown']) moveDir.sub(forward);
-            if (keys['a'] || keys['arrowleft']) moveDir.sub(right);
-            if (keys['d'] || keys['arrowright']) moveDir.add(right);
-
-            if (moveDir.length() > 1) moveDir.normalize();
-            moveDir.multiplyScalar(currentSpeed * clampedDt);
-
-            playerState.position.x += moveDir.x;
-            playerState.position.z += moveDir.z;
-            playerState.position.y = 1.7;
-
-            // Track distance
-            const distMoved = playerState.position.distanceTo(playerState.lastPosition);
-            playerState.distanceRun += distMoved;
-            playerState.lastPosition.copy(playerState.position);
-            distanceEl.textContent = `DISTANCE: ${Math.floor(playerState.distanceRun)}m`;
-
-            // Update camera
-            camera.position.copy(playerState.position);
-            camera.rotation.order = 'YXZ';
-            camera.rotation.y = playerState.yaw;
-            camera.rotation.x = playerState.pitch;
-
-            // Grid position
-            const playerGrid = worldToGrid(playerState.position.x, playerState.position.z);
-            const lookDir = new THREE.Vector3(-Math.sin(playerState.yaw), 0, -Math.cos(playerState.yaw)).normalize();
-
-            // Generate corridors ahead
-            generateAhead(playerGrid.gx, playerGrid.gz, lookDir.x, lookDir.z);
-            ensureConnectivity(playerGrid.gx, playerGrid.gz);
-
-            // Remove far cells
-            removeFarCells(playerGrid.gx, playerGrid.gz, 10);
-
-            // Update monster
-            const lookingAtMonster = isPlayerLookingAtMonster(playerState.position, lookDir);
-            const monsterDist = updateMonsterAI(playerGrid.gx, playerGrid.gz, playerState.position, clampedDt,
-                lookingAtMonster);
-            lastMonsterDist = monsterDist;
-
-            // Check if monster caught player
-            if (monsterDist < 0.8 && monsterGroup) {
-                triggerGameOver();
-                return;
-            }
-
-            // Monster proximity effects
-            if (monsterDist < 8 && monsterDist > 0.5) {
-                triggerVhsGlitch((8 - monsterDist) / 8 * 0.35);
-            }
-            if (monsterDist < 3) {
-                triggerVhsGlitch(0.5);
-            }
-
-            // Update flickering lights
-            const time = Date.now() * 0.001;
-            activeCorridorMeshes.forEach(cell => {
-                const distToMonster = Math.sqrt(
-                    (cell.gx - monsterGridPos.gx) ** 2 + (cell.gz - monsterGridPos.gz) ** 2
-                ) * CELL_SIZE;
-                let flicker = 1;
-                if (distToMonster < 12) {
-                    const proximityFlicker = Math.max(0, 1 - distToMonster / 12);
-                    flicker = 1 - proximityFlicker * 0.7 * Math.abs(Math.sin(time * 8 + cell.flickerOffset));
-                    if (Math.random() < proximityFlicker * 0.03) {
-                        flicker = 0.1 + Math.random() * 0.3;
-                    }
-                }
-                flicker *= 0.85 + 0.15 * Math.sin(time * cell.flickerSpeed + cell.flickerOffset);
-                flicker = Math.max(0.15, flicker);
-                cell.pointLight.intensity = cell.baseIntensity * flicker;
-                cell.lightFixture.material.emissiveIntensity = 1.5 * flicker;
-            });
-
-            // Update audio
-            updateAudio(clampedDt, monsterDist);
-
-            // Update VHS
-            updateVHSOverlay();
-
-            // Update stamina bar
-            staminaInner.style.width = `${playerState.stamina}%`;
-            if (playerState.stamina < 25) {
-                staminaInner.style.background = '#ff3333';
-            } else if (playerState.stamina < 50) {
-                staminaInner.style.background = 'linear-gradient(90deg, #ff4444, #ffaa44)';
-            } else {
-                staminaInner.style.background = 'linear-gradient(90deg, #ff4444, #ffaa44, #44ff44)';
-            }
-
-            // Occasional random VHS glitch
-            if (Math.random() < 0.003) {
-                triggerVhsGlitch(0.2 + Math.random() * 0.4);
-            }
-        }
-
-        function render() {
-            renderer.render(scene, camera);
-        }
-
-        function gameLoop(timestamp) {
-            requestAnimationFrame(gameLoop);
-            const dt = Math.min(clock.getDelta(), 0.25);
-            update(dt);
-            render();
-        }
-
-        // ==================== RESIZE HANDLER ====================
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            vhsCanvas.width = window.innerWidth;
-            vhsCanvas.height = window.innerHeight;
-        });
-
-        // ==================== INITIAL SETUP ====================
-        // Pre-create initial corridor visible at start
-        function preCreateInitialCorridors() {
-            for (let dz = -3; dz <= 5; dz++) {
-                for (let dx = -3; dx <= 3; dx++) {
-                    if (Math.abs(dx) + Math.abs(dz) <= 4 || (dz > 0 && Math.abs(dx) <= 1 && dz <= 5)) {
-                        ensureCorridorAt(dx, dz);
-                        generatedCells.add(cellKey(dx, dz));
-                    }
-                }
-            }
-            ensureConnectivity(0, 0);
-        }
-        preCreateInitialCorridors();
-
-        // Position camera
-        camera.position.set(0, 1.7, 0);
-        camera.rotation.set(0, 0, 0);
-
-        // Initial render
-        render();
-        updateVHSOverlay();
-
-        // ==================== START ====================
-        console.log('🏃 BACKROOMS RUNNER READY');
-        console.log('👁️  Click to start');
-        console.log('💀  Something is behind you...');
-        console.log('👀  Looking at it slows it down');
-        console.log('🏃  SHIFT to sprint (limited stamina)');
-
-        // Start the game loop
-        requestAnimationFrame(gameLoop);
-
-        // Auto-initialize audio context on first user interaction
-        document.addEventListener('click', () => {
-            if (!audioCtx) initAudio();
-        }, { once: true });
-
-        // Handle tab visibility
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && playerState.isLocked) {
-                document.exitPointerLock();
-            }
-        });
-
-        console.log('✅ Game initialized. Click the screen to begin running.');
-    </script>
+        
+        // монстр
+        const lookDir = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+        const toMonster = monsterPos.clone().sub(player.pos);
+        const monsterDist = toMonster.length();
+        const looking = toMonster.normalize().dot(lookDir) > 0.4 && monsterDist < 18;
+        const newDist = moveMonster(dt, player.pos, looking);
+        
+        if (newDist < 0.8) endGame();
+        
+        // эффекты приближения
+        glitchAmt = Math.max(0, (7 - newDist) / 7) * 0.5;
+        if (newDist < 3) glitchAmt = 0.8;
+        monsterGlow.intensity = 1 + Math.max(0, (10-newDist))*0.8;
+        
+        // свет следит за игроком
+        playerLight.position.copy(player.pos).add(new THREE.Vector3(0,2.6,0));
+        
+        staminaFill.style.width = player.stamina + '%';
+      }
+      
+      drawVHS(glitchAmt);
+      renderer.render(scene, camera);
+      glitchAmt *= 0.9;
+    }
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // начальная загрузка минимальной сцены
+    ensurePath(0,0,4);
+    spawnMonster();
+    monsterPos.set(0,0,-16);
+    loop();
+  </script>
 </body>
 </html>
