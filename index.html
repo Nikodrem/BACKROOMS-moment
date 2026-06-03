@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Backrooms: The Chase – Movement Fixed</title>
+    <title>Backrooms: The Chase – No Falling</title>
     <style>
         :root { --bg: #000; }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -169,7 +169,7 @@
         }
         createJumpscareTexture();
 
-        // ── CORRIDOR DATA ──
+        // ── CORRIDOR DATA (the path network) ──
         const CELL_SIZE = 4;
         const pathCells = new Set();
         const cellDataMap = new Map();
@@ -180,292 +180,490 @@
             pathCells.add(key); cellDataMap.set(key,{ hasLight: forceLight || Math.random()<0.55, lightFlickerPhase: Math.random()*Math.PI*2 });
         }
         function removePathCell(x,z){ const key=cellKey(x,z); pathCells.delete(key); cellDataMap.delete(key); }
-        function extendPathAhead(px,pz,dirX,dirZ){
-            addPathCell(px,pz,true);
-            let cx=px, cz=pz; const steps=8+Math.floor(Math.random()*5);
-            for(let i=0;i<steps;i++){
-                const turn=Math.random(); let dx=dirX, dz=dirZ;
-                if(turn<0.25){ if(Math.random()<0.5){ dx=-dz; dz=dx===0?(Math.random()<0.5?1:-1):0; } else { dx=dz; dz=-dx; } }
-                else if(turn<0.4 && i>2){ const bx=cx+(Math.random()<0.5?-dz:dz), bz=cz+(Math.random()<0.5?dx:-dx); if(!isCorridor(bx,bz)){ addPathCell(bx,bz); if(Math.random()<0.5){ addPathCell(bx+(Math.random()<0.5?1:-1),bz); addPathCell(bx,bz+(Math.random()<0.5?1:-1)); } } }
-                cx+=dx; cz+=dz; addPathCell(cx,cz);
+
+        // Guarantee a solid floor of corridors around the player
+        function ensurePlayerArea(px, pz, radius = 3) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                for (let dz = -radius; dz <= radius; dz++) {
+                    if (Math.abs(dx) + Math.abs(dz) <= radius) {
+                        addPathCell(px + dx, pz + dz, true);
+                    }
+                }
             }
-            for(let dx=-1;dx<=1;dx++) for(let dz=-1;dz<=1;dz++) if(Math.abs(dx)+Math.abs(dz)<=1) addPathCell(px+dx,pz+dz,true);
-        }
-        function pruneDistantCells(px,pz,maxDist=30){
-            const toRemove=[]; for(const key of pathCells){ const [x,z]=key.split(',').map(Number); if(Math.abs(x-px)+Math.abs(z-pz)>maxDist) toRemove.push({x,z,key}); }
-            for(const {x,z,key} of toRemove){ removePathCell(x,z); }
         }
 
-        // ── 3D MESHES ──
-        const wallMat = new THREE.MeshStandardMaterial({ color:0xc8b07a, roughness:0.7, metalness:0.05 });
-        const floorMat = new THREE.MeshStandardMaterial({ color:0xb8a080, roughness:0.85, metalness:0.02 });
-        const ceilMat = new THREE.MeshStandardMaterial({ color:0xe0dcd0, roughness:0.6, metalness:0.03 });
-        const lightMat = new THREE.MeshStandardMaterial({ color:0xfafaf5, roughness:0.3, metalness:0.4, emissive:0xfffef5, emissiveIntensity:0.7 });
-        const wallGeo = new THREE.PlaneGeometry(CELL_SIZE,3.2);
-        const floorGeo = new THREE.PlaneGeometry(CELL_SIZE,CELL_SIZE);
-        const ceilGeo = new THREE.PlaneGeometry(CELL_SIZE,CELL_SIZE);
-        const lightGeo = new THREE.BoxGeometry(1.2,0.12,3.2);
+        // Extend a branching path in a given direction
+        function extendPathAhead(px, pz, dirX, dirZ){
+            addPathCell(px, pz, true);
+            let cx = px, cz = pz;
+            const steps = 8 + Math.floor(Math.random() * 5);
+            for (let i = 0; i < steps; i++) {
+                const turn = Math.random();
+                let dx = dirX, dz = dirZ;
+                if (turn < 0.25) {
+                    if (Math.random() < 0.5) { dx = -dz; dz = dx === 0 ? (Math.random() < 0.5 ? 1 : -1) : 0; }
+                    else { dx = dz; dz = -dx; }
+                } else if (turn < 0.4 && i > 2) {
+                    const bx = cx + (Math.random() < 0.5 ? -dz : dz);
+                    const bz = cz + (Math.random() < 0.5 ? dx : -dx);
+                    if (!isCorridor(bx, bz)) {
+                        addPathCell(bx, bz);
+                        if (Math.random() < 0.5) {
+                            addPathCell(bx + (Math.random() < 0.5 ? 1 : -1), bz);
+                            addPathCell(bx, bz + (Math.random() < 0.5 ? 1 : -1));
+                        }
+                    }
+                }
+                cx += dx; cz += dz;
+                addPathCell(cx, cz);
+            }
+            // ensure the immediate vicinity
+            ensurePlayerArea(px, pz, 2);
+        }
+
+        function pruneDistantCells(px, pz, maxDist = 30){
+            const toRemove = [];
+            for (const key of pathCells) {
+                const [x, z] = key.split(',').map(Number);
+                if (Math.abs(x - px) + Math.abs(z - pz) > maxDist) toRemove.push({ x, z, key });
+            }
+            for (const { x, z, key } of toRemove) removePathCell(x, z);
+        }
+
+        // ── 3D MESHES (walls, floor, ceiling) ──
+        // Use DoubleSide for floor/ceiling so we never see through them
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xc8b07a, roughness: 0.7, metalness: 0.05 });
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0xb8a080, roughness: 0.85, metalness: 0.02, side: THREE.DoubleSide });
+        const ceilMat = new THREE.MeshStandardMaterial({ color: 0xe0dcd0, roughness: 0.6, metalness: 0.03, side: THREE.DoubleSide });
+        const lightMat = new THREE.MeshStandardMaterial({ color: 0xfafaf5, roughness: 0.3, metalness: 0.4, emissive: 0xfffef5, emissiveIntensity: 0.7 });
+        const wallGeo = new THREE.PlaneGeometry(CELL_SIZE, 3.2);
+        const floorGeo = new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE);
+        const ceilGeo = new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE);
+        const lightGeo = new THREE.BoxGeometry(1.2, 0.12, 3.2);
         const activeMeshes = new Map();
         const pointLights = [];
 
-        function createCellMeshes(cx,cz){
-            const key=cellKey(cx,cz); if(activeMeshes.has(key) || !isCorridor(cx,cz)) return;
-            const worldX=cx*CELL_SIZE, worldZ=cz*CELL_SIZE;
-            const group=new THREE.Group(); group.position.set(worldX,0,worldZ);
-            const floor=new THREE.Mesh(floorGeo,floorMat); floor.rotation.x=-Math.PI/2; floor.position.y=-1.6; floor.receiveShadow=true; group.add(floor);
-            const ceil=new THREE.Mesh(ceilGeo,ceilMat); ceil.rotation.x=Math.PI/2; ceil.position.y=1.65; group.add(ceil);
-            const neighbors={ north:isCorridor(cx,cz-1), south:isCorridor(cx,cz+1), east:isCorridor(cx+1,cz), west:isCorridor(cx-1,cz) };
-            const walls=[ { dir:'north', rotY:0, posZ:-CELL_SIZE/2 }, { dir:'south', rotY:Math.PI, posZ:CELL_SIZE/2 }, { dir:'east', rotY:Math.PI/2, posX:CELL_SIZE/2 }, { dir:'west', rotY:-Math.PI/2, posX:-CELL_SIZE/2 } ];
-            for(const w of walls){ if(!neighbors[w.dir]){ const wall=new THREE.Mesh(wallGeo,wallMat); wall.rotation.y=w.rotY; wall.position.set(w.posX||0,0,w.posZ||0); wall.castShadow=true; wall.receiveShadow=true; group.add(wall); } }
-            const data=cellDataMap.get(key); let pl=null;
-            if(data && data.hasLight){
-                const fix=new THREE.Mesh(lightGeo,lightMat); fix.position.y=1.55; group.add(fix);
-                pl=new THREE.PointLight(0xfffbe8,32,14,1.5); pl.position.set(worldX,1.4,worldZ); pl.castShadow=true;
-                pl.shadow.mapSize.width=128; pl.shadow.mapSize.height=128; pl.shadow.camera.near=0.3; pl.shadow.camera.far=16; pl.shadow.bias=-0.005;
-                pl.userData={ baseIntensity:32, flickerPhase:data.lightFlickerPhase };
-                scene.add(pl); pointLights.push(pl); group.userData.pointLight=pl;
+        function createCellMeshes(cx, cz){
+            const key = cellKey(cx, cz);
+            if (activeMeshes.has(key) || !isCorridor(cx, cz)) return;
+            const worldX = cx * CELL_SIZE, worldZ = cz * CELL_SIZE;
+            const group = new THREE.Group();
+            group.position.set(worldX, 0, worldZ);
+
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -1.6;
+            floor.receiveShadow = true;
+            group.add(floor);
+
+            const ceil = new THREE.Mesh(ceilGeo, ceilMat);
+            ceil.rotation.x = Math.PI / 2;
+            ceil.position.y = 1.65;
+            group.add(ceil);
+
+            const neighbors = {
+                north: isCorridor(cx, cz - 1),
+                south: isCorridor(cx, cz + 1),
+                east: isCorridor(cx + 1, cz),
+                west: isCorridor(cx - 1, cz),
+            };
+            const walls = [
+                { dir: 'north', rotY: 0, posZ: -CELL_SIZE/2 },
+                { dir: 'south', rotY: Math.PI, posZ: CELL_SIZE/2 },
+                { dir: 'east', rotY: Math.PI/2, posX: CELL_SIZE/2 },
+                { dir: 'west', rotY: -Math.PI/2, posX: -CELL_SIZE/2 },
+            ];
+            for (const w of walls) {
+                if (!neighbors[w.dir]) {
+                    const wall = new THREE.Mesh(wallGeo, wallMat);
+                    wall.rotation.y = w.rotY;
+                    wall.position.set(w.posX || 0, 0, w.posZ || 0);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    group.add(wall);
+                }
             }
-            group.userData.cellX=cx; group.userData.cellZ=cz; scene.add(group); activeMeshes.set(key,group);
+
+            const data = cellDataMap.get(key);
+            let pl = null;
+            if (data && data.hasLight) {
+                const fix = new THREE.Mesh(lightGeo, lightMat);
+                fix.position.y = 1.55;
+                group.add(fix);
+                pl = new THREE.PointLight(0xfffbe8, 32, 14, 1.5);
+                pl.position.set(worldX, 1.4, worldZ);
+                pl.castShadow = true;
+                pl.shadow.mapSize.width = 128;
+                pl.shadow.mapSize.height = 128;
+                pl.shadow.camera.near = 0.3;
+                pl.shadow.camera.far = 16;
+                pl.shadow.bias = -0.005;
+                pl.userData = { baseIntensity: 32, flickerPhase: data.lightFlickerPhase };
+                scene.add(pl);
+                pointLights.push(pl);
+                group.userData.pointLight = pl;
+            }
+            group.userData.cellX = cx;
+            group.userData.cellZ = cz;
+            scene.add(group);
+            activeMeshes.set(key, group);
         }
+
         function removeCellMeshes(key){
-            const group=activeMeshes.get(key); if(!group) return;
-            if(group.userData.pointLight){ scene.remove(group.userData.pointLight); const idx=pointLights.indexOf(group.userData.pointLight); if(idx>=0) pointLights.splice(idx,1); }
-            scene.remove(group); activeMeshes.delete(key);
+            const group = activeMeshes.get(key);
+            if (!group) return;
+            if (group.userData.pointLight) {
+                scene.remove(group.userData.pointLight);
+                const idx = pointLights.indexOf(group.userData.pointLight);
+                if (idx >= 0) pointLights.splice(idx, 1);
+            }
+            scene.remove(group);
+            activeMeshes.delete(key);
         }
+
         function updateVisibleMeshes(){
-            const radius=16; const desired=new Set();
-            for(const key of pathCells){ const [x,z]=key.split(',').map(Number); if(Math.abs(x-playerGridX)+Math.abs(z-playerGridZ)<=radius) desired.add(key); }
-            for(const key of activeMeshes.keys()) if(!desired.has(key)) removeCellMeshes(key);
-            for(const key of desired) if(!activeMeshes.has(key)){ const [x,z]=key.split(',').map(Number); createCellMeshes(x,z); }
-            while(pointLights.length>70){ const old=pointLights.shift(); scene.remove(old); }
+            const radius = 16;
+            const desired = new Set();
+            for (const key of pathCells) {
+                const [x, z] = key.split(',').map(Number);
+                if (Math.abs(x - playerGridX) + Math.abs(z - playerGridZ) <= radius) desired.add(key);
+            }
+            for (const key of activeMeshes.keys()) if (!desired.has(key)) removeCellMeshes(key);
+            for (const key of desired) if (!activeMeshes.has(key)) {
+                const [x, z] = key.split(',').map(Number);
+                createCellMeshes(x, z);
+            }
+            while (pointLights.length > 70) {
+                const old = pointLights.shift();
+                scene.remove(old);
+            }
         }
 
         // ── MONSTER ──
         let monsterGroup;
         function createMonster(){
-            monsterGroup=new THREE.Group();
-            const faceTex=createMonsterFaceTexture(); faceTex.colorSpace=THREE.SRGBColorSpace;
-            const skinMat=new THREE.MeshStandardMaterial({ map:faceTex, roughness:0.5, metalness:0.05 });
-            const darkMat=new THREE.MeshStandardMaterial({ color:0x1a1010, roughness:0.6, metalness:0.1 });
-            const bodyMat=new THREE.MeshStandardMaterial({ color:0x2a1815, roughness:0.55, metalness:0.08 });
-            const headGeo=new THREE.SphereGeometry(0.5,32,28); headGeo.scale(1,1.2,0.9); const head=new THREE.Mesh(headGeo,skinMat); head.position.y=2.15; head.castShadow=true; monsterGroup.add(head);
-            const eyeGeo=new THREE.SphereGeometry(0.08,8,8); const eyeMat=new THREE.MeshBasicMaterial({ color:0xff9944 });
-            const leftEye=new THREE.Mesh(eyeGeo,eyeMat); leftEye.position.set(-0.15,2.28,-0.38); monsterGroup.add(leftEye);
-            const rightEye=new THREE.Mesh(eyeGeo,eyeMat); rightEye.position.set(0.17,2.26,-0.38); monsterGroup.add(rightEye);
-            const torsoGeo=new THREE.CylinderGeometry(0.28,0.35,1.3,16); const torso=new THREE.Mesh(torsoGeo,bodyMat); torso.position.y=1.1; torso.castShadow=true; monsterGroup.add(torso);
-            const armGeo=new THREE.CylinderGeometry(0.1,0.13,1.3,10);
-            const leftArm=new THREE.Mesh(armGeo,darkMat); leftArm.position.set(-0.45,1.25,0); leftArm.rotation.z=0.25; leftArm.castShadow=true; monsterGroup.add(leftArm);
-            const rightArm=new THREE.Mesh(armGeo,darkMat); rightArm.position.set(0.45,1.25,0); rightArm.rotation.z=-0.25; rightArm.castShadow=true; monsterGroup.add(rightArm);
-            const legGeo=new THREE.CylinderGeometry(0.12,0.16,1.1,10);
-            const leftLeg=new THREE.Mesh(legGeo,darkMat); leftLeg.position.set(-0.2,0.3,0); leftLeg.castShadow=true; monsterGroup.add(leftLeg);
-            const rightLeg=new THREE.Mesh(legGeo,darkMat); rightLeg.position.set(0.2,0.3,0); rightLeg.castShadow=true; monsterGroup.add(rightLeg);
-            monsterGroup.userData={ head, leftEye, rightEye, leftArm, rightArm };
+            monsterGroup = new THREE.Group();
+            const faceTex = createMonsterFaceTexture();
+            faceTex.colorSpace = THREE.SRGBColorSpace;
+            const skinMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5, metalness: 0.05 });
+            const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1010, roughness: 0.6, metalness: 0.1 });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2a1815, roughness: 0.55, metalness: 0.08 });
+            const headGeo = new THREE.SphereGeometry(0.5, 32, 28); headGeo.scale(1, 1.2, 0.9);
+            const head = new THREE.Mesh(headGeo, skinMat); head.position.y = 2.15; head.castShadow = true; monsterGroup.add(head);
+            const eyeGeo = new THREE.SphereGeometry(0.08, 8, 8); const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff9944 });
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.15, 2.28, -0.38); monsterGroup.add(leftEye);
+            const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.17, 2.26, -0.38); monsterGroup.add(rightEye);
+            const torsoGeo = new THREE.CylinderGeometry(0.28, 0.35, 1.3, 16); const torso = new THREE.Mesh(torsoGeo, bodyMat); torso.position.y = 1.1; torso.castShadow = true; monsterGroup.add(torso);
+            const armGeo = new THREE.CylinderGeometry(0.1, 0.13, 1.3, 10);
+            const leftArm = new THREE.Mesh(armGeo, darkMat); leftArm.position.set(-0.45, 1.25, 0); leftArm.rotation.z = 0.25; leftArm.castShadow = true; monsterGroup.add(leftArm);
+            const rightArm = new THREE.Mesh(armGeo, darkMat); rightArm.position.set(0.45, 1.25, 0); rightArm.rotation.z = -0.25; rightArm.castShadow = true; monsterGroup.add(rightArm);
+            const legGeo = new THREE.CylinderGeometry(0.12, 0.16, 1.1, 10);
+            const leftLeg = new THREE.Mesh(legGeo, darkMat); leftLeg.position.set(-0.2, 0.3, 0); leftLeg.castShadow = true; monsterGroup.add(leftLeg);
+            const rightLeg = new THREE.Mesh(legGeo, darkMat); rightLeg.position.set(0.2, 0.3, 0); rightLeg.castShadow = true; monsterGroup.add(rightLeg);
+            monsterGroup.userData = { head, leftEye, rightEye, leftArm, rightArm };
             scene.add(monsterGroup);
         }
         function updateMonsterPosition(){
-            if(!monsterGroup || gameOver) return;
-            const wx=monsterGridX*CELL_SIZE, wz=monsterGridZ*CELL_SIZE;
-            monsterGroup.position.lerp(new THREE.Vector3(wx,0,wz),0.3);
-            const angle=Math.atan2(playerWorldPos.x-wx, playerWorldPos.z-wz); monsterGroup.rotation.y=angle;
+            if (!monsterGroup || gameOver) return;
+            const wx = monsterGridX * CELL_SIZE, wz = monsterGridZ * CELL_SIZE;
+            monsterGroup.position.lerp(new THREE.Vector3(wx, 0, wz), 0.3);
+            const angle = Math.atan2(playerWorldPos.x - wx, playerWorldPos.z - wz);
+            monsterGroup.rotation.y = angle;
         }
         function updateMonsterAnimation(dt){
-            if(!monsterGroup || gameOver) return;
-            const u=monsterGroup.userData; const bob=Math.sin(time*3.5)*0.08;
-            u.head.position.y=2.15+bob; u.head.rotation.z=Math.sin(time*2.3)*0.08; u.head.rotation.x=Math.cos(time*2.7)*0.05;
-            u.leftArm.rotation.z=0.25+Math.sin(time*2.5)*0.2; u.rightArm.rotation.z=-0.25+Math.cos(time*2.5)*0.2;
-            const glow=0.6+Math.sin(time*5+Math.PI)*0.4;
-            u.leftEye.material.color.setRGB(1,0.5+glow*0.3,0.15+glow*0.2); u.rightEye.material.color.setRGB(1,0.5+glow*0.3,0.15+glow*0.2);
-            u.leftEye.scale.setScalar(0.7+glow*0.6); u.rightEye.scale.setScalar(0.7+glow*0.6);
+            if (!monsterGroup || gameOver) return;
+            const u = monsterGroup.userData;
+            const bob = Math.sin(time * 3.5) * 0.08;
+            u.head.position.y = 2.15 + bob;
+            u.head.rotation.z = Math.sin(time * 2.3) * 0.08;
+            u.head.rotation.x = Math.cos(time * 2.7) * 0.05;
+            u.leftArm.rotation.z = 0.25 + Math.sin(time * 2.5) * 0.2;
+            u.rightArm.rotation.z = -0.25 + Math.cos(time * 2.5) * 0.2;
+            const glow = 0.6 + Math.sin(time * 5 + Math.PI) * 0.4;
+            u.leftEye.material.color.setRGB(1, 0.5 + glow * 0.3, 0.15 + glow * 0.2);
+            u.rightEye.material.color.setRGB(1, 0.5 + glow * 0.3, 0.15 + glow * 0.2);
+            u.leftEye.scale.setScalar(0.7 + glow * 0.6);
+            u.rightEye.scale.setScalar(0.7 + glow * 0.6);
         }
 
         // ── MONSTER AI ──
-        function bfsPath(sx,sz,tx,tz){
-            const visited=new Set(); const queue=[[{x:sx,z:sz}]]; visited.add(cellKey(sx,sz)); const maxSteps=60;
-            while(queue.length){
-                const path=queue.shift(); const cur=path[path.length-1];
-                if(cur.x===tx && cur.z===tz) return path.length>1?path[1]:cur;
-                if(path.length>=maxSteps) continue;
-                const neighbors=[{x:cur.x+1,z:cur.z},{x:cur.x-1,z:cur.z},{x:cur.x,z:cur.z+1},{x:cur.x,z:cur.z-1}];
-                for(let i=neighbors.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [neighbors[i],neighbors[j]]=[neighbors[j],neighbors[i]]; }
-                for(const n of neighbors){ const nk=cellKey(n.x,n.z); if(!visited.has(nk) && isCorridor(n.x,n.z)){ visited.add(nk); queue.push([...path,n]); } }
+        function bfsPath(sx, sz, tx, tz){
+            const visited = new Set();
+            const queue = [[{ x: sx, z: sz }]];
+            visited.add(cellKey(sx, sz));
+            const maxSteps = 60;
+            while (queue.length) {
+                const path = queue.shift();
+                const cur = path[path.length - 1];
+                if (cur.x === tx && cur.z === tz) return path.length > 1 ? path[1] : cur;
+                if (path.length >= maxSteps) continue;
+                const neighbors = [
+                    { x: cur.x + 1, z: cur.z }, { x: cur.x - 1, z: cur.z },
+                    { x: cur.x, z: cur.z + 1 }, { x: cur.x, z: cur.z - 1 }
+                ];
+                for (let i = neighbors.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [neighbors[i], neighbors[j]] = [neighbors[j], neighbors[i]];
+                }
+                for (const n of neighbors) {
+                    const nk = cellKey(n.x, n.z);
+                    if (!visited.has(nk) && isCorridor(n.x, n.z)) {
+                        visited.add(nk);
+                        queue.push([...path, n]);
+                    }
+                }
             }
             return null;
         }
         function updateMonsterAI(dt){
-            if(gameOver) return;
-            monsterSurgeTimer-=dt; monsterSurgeCooldown-=dt;
-            let spd=monsterSpeed; if(monsterSurgeTimer>0) spd*=1.7;
-            else if(monsterSurgeCooldown<=0 && Math.random()<0.008){ monsterSurgeTimer=1.5+Math.random()*2; monsterSurgeCooldown=6+Math.random()*8; }
-            const distToPlayer=Math.abs(monsterGridX-playerGridX)+Math.abs(monsterGridZ-playerGridZ);
-            if(distToPlayer<=1 && Math.random()<0.35){ triggerGameOver(); return; }
-            const next=bfsPath(monsterGridX,monsterGridZ,playerGridX,playerGridZ);
-            if(next){
-                const wx=monsterGridX*CELL_SIZE, wz=monsterGridZ*CELL_SIZE;
-                const tx=next.x*CELL_SIZE, tz=next.z*CELL_SIZE;
-                const dx=tx-wx, dz=tz-wz, dist=Math.sqrt(dx*dx+dz*dz);
-                if(dist<0.15){ monsterGridX=next.x; monsterGridZ=next.z; }
-                else{
-                    const ratio=Math.min((spd*dt)/dist,1);
-                    const newWX=wx+dx*ratio, newWZ=wz+dz*ratio;
-                    const nx=Math.round(newWX/CELL_SIZE), nz=Math.round(newWZ/CELL_SIZE);
-                    if(isCorridor(nx,nz)){ monsterGridX=nx; monsterGridZ=nz; }
+            if (gameOver) return;
+            monsterSurgeTimer -= dt;
+            monsterSurgeCooldown -= dt;
+            let spd = monsterSpeed;
+            if (monsterSurgeTimer > 0) spd *= 1.7;
+            else if (monsterSurgeCooldown <= 0 && Math.random() < 0.008) {
+                monsterSurgeTimer = 1.5 + Math.random() * 2;
+                monsterSurgeCooldown = 6 + Math.random() * 8;
+            }
+            const distToPlayer = Math.abs(monsterGridX - playerGridX) + Math.abs(monsterGridZ - playerGridZ);
+            if (distToPlayer <= 1 && Math.random() < 0.35) { triggerGameOver(); return; }
+            const next = bfsPath(monsterGridX, monsterGridZ, playerGridX, playerGridZ);
+            if (next) {
+                const wx = monsterGridX * CELL_SIZE, wz = monsterGridZ * CELL_SIZE;
+                const tx = next.x * CELL_SIZE, tz = next.z * CELL_SIZE;
+                const dx = tx - wx, dz = tz - wz, dist = Math.sqrt(dx*dx + dz*dz);
+                if (dist < 0.15) { monsterGridX = next.x; monsterGridZ = next.z; }
+                else {
+                    const ratio = Math.min((spd * dt) / dist, 1);
+                    const newWX = wx + dx * ratio, newWZ = wz + dz * ratio;
+                    const nx = Math.round(newWX / CELL_SIZE), nz = Math.round(newWZ / CELL_SIZE);
+                    if (isCorridor(nx, nz)) { monsterGridX = nx; monsterGridZ = nz; }
                 }
             }
-            const worldDist=Math.sqrt((monsterGridX*CELL_SIZE-playerWorldPos.x)**2+(monsterGridZ*CELL_SIZE-playerWorldPos.z)**2);
-            if(worldDist<2.2) triggerGameOver();
-            setHeartbeat(Math.max(0,1-worldDist/25));
-            hudEl.textContent=worldDist<8?"IT'S CLOSE":worldDist<16?"KEEP RUNNING":"KEEP MOVING";
-            hudEl.style.color=worldDist<8?'#ff6644':'#c8b87d';
+            const worldDist = Math.sqrt((monsterGridX*CELL_SIZE - playerWorldPos.x)**2 + (monsterGridZ*CELL_SIZE - playerWorldPos.z)**2);
+            if (worldDist < 2.2) triggerGameOver();
+            setHeartbeat(Math.max(0, 1 - worldDist/25));
+            hudEl.textContent = worldDist < 8 ? "IT'S CLOSE" : (worldDist < 16 ? "KEEP RUNNING" : "KEEP MOVING");
+            hudEl.style.color = worldDist < 8 ? '#ff6644' : '#c8b87d';
         }
         function triggerGameOver(){
-            if(gameOver) return; gameOver=true;
+            if (gameOver) return; gameOver = true;
             jumpscareEl.classList.add('active'); restartPrompt.classList.add('visible');
-            hudEl.textContent=''; staminaFill.style.width='0%'; setHeartbeat(0);
-            if(audioCtx){ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=80; g.gain.setValueAtTime(0.6,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.8); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.8); }
-            setTimeout(()=>jumpscareEl.classList.remove('active'),400);
+            hudEl.textContent = ''; staminaFill.style.width = '0%'; setHeartbeat(0);
+            if (audioCtx) {
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.type = 'square'; o.frequency.value = 80;
+                g.gain.setValueAtTime(0.6, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+                o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.8);
+            }
+            setTimeout(() => jumpscareEl.classList.remove('active'), 400);
         }
 
-        // ── PLAYER (continuous world position) ──
+        // ── PLAYER (continuous position, clamped to corridors) ──
         let playerWorldPos = new THREE.Vector3(0, 1.55, 0);
-        let playerGridX=0, playerGridZ=0;
-        let stamina=100, isSprinting=false;
-        const NORMAL_SPEED=7.5, SPRINT_SPEED=12.5;
+        let playerGridX = 0, playerGridZ = 0;
+        let stamina = 100, isSprinting = false;
+        const NORMAL_SPEED = 7.5, SPRINT_SPEED = 12.5;
+
+        function clampPlayerToNearestCorridor() {
+            // If player's current grid cell is not a corridor, find the closest valid one
+            if (!isCorridor(playerGridX, playerGridZ)) {
+                let bestDist = Infinity, bestX = playerGridX, bestZ = playerGridZ;
+                for (const key of pathCells) {
+                    const [x, z] = key.split(',').map(Number);
+                    const d = Math.abs(x - playerGridX) + Math.abs(z - playerGridZ);
+                    if (d < bestDist) { bestDist = d; bestX = x; bestZ = z; }
+                }
+                playerGridX = bestX;
+                playerGridZ = bestZ;
+                playerWorldPos.x = playerGridX * CELL_SIZE;
+                playerWorldPos.z = playerGridZ * CELL_SIZE;
+            }
+        }
+
         function updatePlayer(dt){
-            if(gameOver) return;
-            // stamina
-            if(isSprinting && stamina>0 && (keys['KeyW']||keys['ArrowUp'])){ stamina=Math.max(0,stamina-28*dt); if(stamina<=0) isSprinting=false; }
-            else{ stamina=Math.min(100,stamina+18*dt); if(stamina>=15 && keys['ShiftLeft'] && (keys['KeyW']||keys['ArrowUp'])) isSprinting=true; else if(!keys['ShiftLeft']||!(keys['KeyW']||keys['ArrowUp'])) isSprinting=false; }
-            staminaFill.style.width=Math.round(stamina)+'%'; staminaFill.style.background=stamina<25?'#ff6644':'#c8b87d';
-            const speed=isSprinting?SPRINT_SPEED:NORMAL_SPEED;
-            const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)).normalize();
-            const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)).normalize();
-            let moveX=0, moveZ=0;
-            if(keys['KeyW']||keys['ArrowUp']){ moveX+=forward.x; moveZ+=forward.z; }
-            if(keys['KeyS']||keys['ArrowDown']){ moveX-=forward.x; moveZ-=forward.z; }
-            if(keys['KeyA']||keys['ArrowLeft']){ moveX-=right.x; moveZ-=right.z; }
-            if(keys['KeyD']||keys['ArrowRight']){ moveX+=right.x; moveZ+=right.z; }
-            const len=Math.sqrt(moveX*moveX+moveZ*moveZ);
-            if(len>1){ moveX/=len; moveZ/=len; }
-            const isMoving=len>0.1;
-            // compute new world position
-            const deltaX=moveX*speed*dt, deltaZ=moveZ*speed*dt;
-            const newPos=playerWorldPos.clone();
-            newPos.x+=deltaX; newPos.z+=deltaZ;
-            const newGridX=Math.round(newPos.x/CELL_SIZE), newGridZ=Math.round(newPos.z/CELL_SIZE);
-            let accepted=false;
-            if(isCorridor(newGridX,newGridZ)){
-                accepted=true;
+            if (gameOver) return;
+            // Stamina
+            if (isSprinting && stamina > 0 && (keys['KeyW'] || keys['ArrowUp'])) {
+                stamina = Math.max(0, stamina - 28 * dt);
+                if (stamina <= 0) isSprinting = false;
             } else {
-                // try separate axes
-                const posX=playerWorldPos.clone(); posX.x+=deltaX; const gx=Math.round(posX.x/CELL_SIZE); const gz=Math.round(posX.z/CELL_SIZE);
-                if(isCorridor(gx,gz)){ newPos.copy(posX); accepted=true; }
-                else{
-                    const posZ=playerWorldPos.clone(); posZ.z+=deltaZ; const gx2=Math.round(posZ.x/CELL_SIZE); const gz2=Math.round(posZ.z/CELL_SIZE);
-                    if(isCorridor(gx2,gz2)){ newPos.copy(posZ); accepted=true; }
+                stamina = Math.min(100, stamina + 18 * dt);
+                if (stamina >= 15 && keys['ShiftLeft'] && (keys['KeyW'] || keys['ArrowUp'])) isSprinting = true;
+                else if (!keys['ShiftLeft'] || !(keys['KeyW'] || keys['ArrowUp'])) isSprinting = false;
+            }
+            staminaFill.style.width = Math.round(stamina) + '%';
+            staminaFill.style.background = stamina < 25 ? '#ff6644' : '#c8b87d';
+
+            const speed = isSprinting ? SPRINT_SPEED : NORMAL_SPEED;
+            const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)).normalize();
+            const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)).normalize();
+            let moveX = 0, moveZ = 0;
+            if (keys['KeyW'] || keys['ArrowUp']) { moveX += forward.x; moveZ += forward.z; }
+            if (keys['KeyS'] || keys['ArrowDown']) { moveX -= forward.x; moveZ -= forward.z; }
+            if (keys['KeyA'] || keys['ArrowLeft']) { moveX -= right.x; moveZ -= right.z; }
+            if (keys['KeyD'] || keys['ArrowRight']) { moveX += right.x; moveZ += right.z; }
+            const len = Math.sqrt(moveX * moveX + moveZ * moveZ);
+            if (len > 1) { moveX /= len; moveZ /= len; }
+            const isMoving = len > 0.1;
+
+            // Proposed new position
+            const deltaX = moveX * speed * dt;
+            const deltaZ = moveZ * speed * dt;
+            const newPos = playerWorldPos.clone();
+            newPos.x += deltaX;
+            newPos.z += deltaZ;
+
+            const newGridX = Math.round(newPos.x / CELL_SIZE);
+            const newGridZ = Math.round(newPos.z / CELL_SIZE);
+
+            // Check if new cell is a corridor; if not, try sliding along walls
+            if (isCorridor(newGridX, newGridZ)) {
+                playerWorldPos.copy(newPos);
+            } else {
+                // Try moving only in X
+                const posX = playerWorldPos.clone();
+                posX.x += deltaX;
+                const gx = Math.round(posX.x / CELL_SIZE);
+                const gz = Math.round(posX.z / CELL_SIZE);
+                if (isCorridor(gx, gz)) {
+                    playerWorldPos.copy(posX);
+                } else {
+                    // Try moving only in Z
+                    const posZ = playerWorldPos.clone();
+                    posZ.z += deltaZ;
+                    const gx2 = Math.round(posZ.x / CELL_SIZE);
+                    const gz2 = Math.round(posZ.z / CELL_SIZE);
+                    if (isCorridor(gx2, gz2)) {
+                        playerWorldPos.copy(posZ);
+                    }
+                    // If still blocked, keep old position (don't move)
                 }
             }
-            if(accepted){
-                playerWorldPos.copy(newPos);
-            }
-            playerGridX=Math.round(playerWorldPos.x/CELL_SIZE); playerGridZ=Math.round(playerWorldPos.z/CELL_SIZE);
-            // head bob
-            if(isMoving) headBobPhase+=dt*(isSprinting?14:10);
-            const bobY=isMoving?Math.sin(headBobPhase)*0.06:0;
-            const bobX=isMoving?Math.cos(headBobPhase*2)*0.03:0;
-            camera.position.set(playerWorldPos.x+bobX, 1.55+bobY, playerWorldPos.z);
-            camera.rotation.set(pitch,yaw,0);
-            // extend path ahead
-            const dirX=isMoving?Math.round(moveX):0, dirZ=isMoving?Math.round(moveZ):0;
-            if(dirX!==0||dirZ!==0) extendPathAhead(playerGridX,playerGridZ,dirX,dirZ);
-            else addPathCell(playerGridX,playerGridZ,true);
-            pruneDistantCells(playerGridX,playerGridZ,28);
+
+            // Update grid coordinates from world position
+            playerGridX = Math.round(playerWorldPos.x / CELL_SIZE);
+            playerGridZ = Math.round(playerWorldPos.z / CELL_SIZE);
+
+            // Safety clamp: if somehow outside corridor, snap to nearest valid cell
+            clampPlayerToNearestCorridor();
+
+            // Head bob
+            if (isMoving) headBobPhase += dt * (isSprinting ? 14 : 10);
+            const bobY = isMoving ? Math.sin(headBobPhase) * 0.06 : 0;
+            const bobX = isMoving ? Math.cos(headBobPhase * 2) * 0.03 : 0;
+            camera.position.set(playerWorldPos.x + bobX, 1.55 + bobY, playerWorldPos.z);
+            camera.rotation.set(pitch, yaw, 0);
+
+            // Ensure the immediate area is fully generated
+            ensurePlayerArea(playerGridX, playerGridZ, 3);
+            // Extend ahead in movement direction
+            const dirX = isMoving ? Math.round(moveX) : 0;
+            const dirZ = isMoving ? Math.round(moveZ) : 0;
+            if (dirX !== 0 || dirZ !== 0) extendPathAhead(playerGridX, playerGridZ, dirX, dirZ);
+            pruneDistantCells(playerGridX, playerGridZ, 28);
             updateVisibleMeshes();
         }
 
         // ── LIGHTING ──
         function setupLighting(){
-            scene.add(new THREE.AmbientLight(0x5c4a3a,1.2));
-            const fill=new THREE.PointLight(0x443820,18,25,2); fill.position.set(0,3,0); scene.add(fill);
+            scene.add(new THREE.AmbientLight(0x5c4a3a, 1.4));
+            const fill = new THREE.PointLight(0x443820, 20, 25, 2);
+            fill.position.set(0, 3, 0);
+            scene.add(fill);
         }
         function updateFlickeringLights(t){
-            for(const pl of pointLights){
-                if(!pl.userData||pl.userData.baseIntensity===undefined) continue;
-                const p=pl.userData.flickerPhase||0;
-                const flicker=1+Math.sin(t*8+p)*0.15+Math.sin(t*19+p*1.7)*0.1+Math.sin(t*37+p*2.3)*0.08;
-                const dip=Math.sin(t*2.1+p*3)>0.85?0.35:1;
-                pl.intensity=pl.userData.baseIntensity*Math.max(0.2,flicker*dip);
+            for (const pl of pointLights) {
+                if (!pl.userData || pl.userData.baseIntensity === undefined) continue;
+                const p = pl.userData.flickerPhase || 0;
+                const flicker = 1 + Math.sin(t*8+p)*0.15 + Math.sin(t*19+p*1.7)*0.1 + Math.sin(t*37+p*2.3)*0.08;
+                const dip = Math.sin(t*2.1+p*3) > 0.85 ? 0.35 : 1;
+                pl.intensity = pl.userData.baseIntensity * Math.max(0.2, flicker * dip);
             }
         }
 
         // ── INPUT ──
-        const keys={};
-        let gameOver=false, gameStarted=false, mouseLocked=false;
-        let yaw=0, pitch=-0.05, headBobPhase=0, time=0;
-        let monsterGridX=0, monsterGridZ=-6, monsterSpeed=6.2, monsterSurgeTimer=0, monsterSurgeCooldown=0;
-        function onKeyDown(e){ keys[e.code]=true; if(!gameStarted&&!gameOver){ gameStarted=true; initAudio(); extendPathAhead(0,0,0,-1); updateVisibleMeshes(); } if(gameOver&&e.code==='KeyR') restartGame(); }
-        function onKeyUp(e){ keys[e.code]=false; if(e.code==='ShiftLeft') isSprinting=false; }
-        function onMouseMove(e){ if(!mouseLocked||gameOver) return; yaw-=e.movementX*0.002; pitch-=e.movementY*0.002; pitch=Math.max(-1.2,Math.min(0.5,pitch)); }
-        function onMouseDown(){ if(gameOver){ restartGame(); return; } if(!mouseLocked){ canvas.requestPointerLock(); initAudio(); if(!gameStarted){ gameStarted=true; extendPathAhead(0,0,0,-1); updateVisibleMeshes(); } } }
-        function onPointerLockChange(){ mouseLocked=document.pointerLockElement===canvas; }
-        function onResize(){ renderer.setSize(window.innerWidth,window.innerHeight); camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); }
-        let touchStartX=0,touchStartY=0,touchActive=false;
-        function onTouchStart(e){ if(gameOver){ restartGame(); return; } initAudio(); if(!gameStarted){ gameStarted=true; extendPathAhead(0,0,0,-1); updateVisibleMeshes(); } if(e.touches.length===1){ touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; touchActive=true; keys['KeyW']=true; } if(e.touches.length===2) isSprinting=true; }
-        function onTouchMove(e){ if(!touchActive||gameOver) return; const dx=e.touches[0].clientX-touchStartX, dy=e.touches[0].clientY-touchStartY; yaw-=dx*0.004; pitch-=dy*0.004; pitch=Math.max(-1.2,Math.min(0.5,pitch)); touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; }
-        function onTouchEnd(){ touchActive=false; keys['KeyW']=false; isSprinting=false; }
+        const keys = {};
+        let gameOver = false, gameStarted = false, mouseLocked = false;
+        let yaw = 0, pitch = -0.05, headBobPhase = 0, time = 0;
+        let monsterGridX = 0, monsterGridZ = -6, monsterSpeed = 6.2, monsterSurgeTimer = 0, monsterSurgeCooldown = 0;
+        function onKeyDown(e){ keys[e.code] = true; if(!gameStarted && !gameOver){ gameStarted = true; initAudio(); ensurePlayerArea(0,0,3); updateVisibleMeshes(); } if(gameOver && e.code === 'KeyR') restartGame(); }
+        function onKeyUp(e){ keys[e.code] = false; if(e.code === 'ShiftLeft') isSprinting = false; }
+        function onMouseMove(e){ if(!mouseLocked || gameOver) return; yaw -= e.movementX * 0.002; pitch -= e.movementY * 0.002; pitch = Math.max(-1.2, Math.min(0.5, pitch)); }
+        function onMouseDown(){ if(gameOver){ restartGame(); return; } if(!mouseLocked){ canvas.requestPointerLock(); initAudio(); if(!gameStarted){ gameStarted = true; ensurePlayerArea(0,0,3); updateVisibleMeshes(); } } }
+        function onPointerLockChange(){ mouseLocked = document.pointerLockElement === canvas; }
+        function onResize(){ renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); }
+        let touchStartX = 0, touchStartY = 0, touchActive = false;
+        function onTouchStart(e){ if(gameOver){ restartGame(); return; } initAudio(); if(!gameStarted){ gameStarted = true; ensurePlayerArea(0,0,3); updateVisibleMeshes(); } if(e.touches.length === 1){ touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; touchActive = true; keys['KeyW'] = true; } if(e.touches.length === 2) isSprinting = true; }
+        function onTouchMove(e){ if(!touchActive || gameOver) return; const dx = e.touches[0].clientX - touchStartX, dy = e.touches[0].clientY - touchStartY; yaw -= dx * 0.004; pitch -= dy * 0.004; pitch = Math.max(-1.2, Math.min(0.5, pitch)); touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
+        function onTouchEnd(){ touchActive = false; keys['KeyW'] = false; isSprinting = false; }
 
         // ── RESTART ──
         function restartGame(){
-            gameOver=false; gameStarted=true;
+            gameOver = false; gameStarted = true;
             pathCells.clear(); cellDataMap.clear();
             for(const key of activeMeshes.keys()) removeCellMeshes(key);
-            pointLights.length=0; activeMeshes.clear();
-            playerWorldPos.set(0,1.55,0); playerGridX=0; playerGridZ=0;
-            stamina=100; isSprinting=false;
-            monsterGridX=0; monsterGridZ=-6; monsterSurgeTimer=0; monsterSurgeCooldown=4;
-            yaw=0; pitch=-0.05; headBobPhase=0; time=0;
-            addPathCell(0,0,true); extendPathAhead(0,0,0,-1); updateVisibleMeshes();
-            monsterGroup.position.set(monsterGridX*CELL_SIZE,0,monsterGridZ*CELL_SIZE);
-            camera.position.set(0,1.55,0); camera.rotation.set(pitch,yaw,0);
+            pointLights.length = 0; activeMeshes.clear();
+            playerWorldPos.set(0, 1.55, 0); playerGridX = 0; playerGridZ = 0;
+            stamina = 100; isSprinting = false;
+            monsterGridX = 0; monsterGridZ = -6; monsterSurgeTimer = 0; monsterSurgeCooldown = 4;
+            yaw = 0; pitch = -0.05; headBobPhase = 0; time = 0;
+            ensurePlayerArea(0, 0, 3); extendPathAhead(0, 0, 0, -1); updateVisibleMeshes();
+            monsterGroup.position.set(monsterGridX * CELL_SIZE, 0, monsterGridZ * CELL_SIZE);
+            camera.position.set(0, 1.55, 0); camera.rotation.set(pitch, yaw, 0);
             jumpscareEl.classList.remove('active'); restartPrompt.classList.remove('visible');
-            hudEl.textContent='KEEP RUNNING'; hudEl.style.color='#c8b87d'; staminaFill.style.width='100%'; setHeartbeat(0);
+            hudEl.textContent = 'KEEP RUNNING'; hudEl.style.color = '#c8b87d'; staminaFill.style.width = '100%'; setHeartbeat(0);
         }
 
-        // ── LOOP ──
-        const clock=new THREE.Clock(); let lastPrune=0;
+        // ── GAME LOOP ──
+        const clock = new THREE.Clock();
+        let lastPrune = 0;
         function gameLoop(){
             requestAnimationFrame(gameLoop);
-            const dt=Math.min(clock.getDelta(),0.15); time+=dt;
-            if(!gameOver&&gameStarted){
-                updatePlayer(dt); updateMonsterAI(dt); updateMonsterPosition(); updateMonsterAnimation(dt);
+            const dt = Math.min(clock.getDelta(), 0.15);
+            time += dt;
+            if (!gameOver && gameStarted) {
+                updatePlayer(dt);
+                updateMonsterAI(dt);
+                updateMonsterPosition();
+                updateMonsterAnimation(dt);
                 updateFlickeringLights(time);
-                lastPrune+=dt; if(lastPrune>1.5){ lastPrune=0; pruneDistantCells(playerGridX,playerGridZ,28); }
+                lastPrune += dt;
+                if (lastPrune > 1.5) { lastPrune = 0; pruneDistantCells(playerGridX, playerGridZ, 28); }
             }
-            renderer.render(scene,camera);
-            if(!gameOver&&gameStarted){
-                const dist=Math.sqrt((monsterGridX-playerGridX)**2+(monsterGridZ-playerGridZ)**2)*CELL_SIZE;
-                const vhs=Math.max(0.4,Math.min(1,1-dist/30));
-                document.getElementById('vhs-overlay').style.opacity=0.35+vhs*0.35;
-                document.getElementById('noise-overlay').style.opacity=0.15+vhs*0.25;
-                document.getElementById('chroma-overlay').style.opacity=0.06+vhs*0.14;
+            renderer.render(scene, camera);
+            if (!gameOver && gameStarted) {
+                const dist = Math.sqrt((monsterGridX - playerGridX)**2 + (monsterGridZ - playerGridZ)**2) * CELL_SIZE;
+                const vhs = Math.max(0.4, Math.min(1, 1 - dist/30));
+                document.getElementById('vhs-overlay').style.opacity = 0.35 + vhs * 0.35;
+                document.getElementById('noise-overlay').style.opacity = 0.15 + vhs * 0.25;
+                document.getElementById('chroma-overlay').style.opacity = 0.06 + vhs * 0.14;
             }
         }
 
         // ── INIT ──
         function init(){
-            setupLighting(); createMonster();
-            addPathCell(0,0,true); extendPathAhead(0,0,0,-1); updateVisibleMeshes();
-            monsterGroup.position.set(monsterGridX*CELL_SIZE,0,monsterGridZ*CELL_SIZE);
-            playerWorldPos.set(0,1.55,0); camera.position.copy(playerWorldPos);
-            window.addEventListener('keydown',onKeyDown); window.addEventListener('keyup',onKeyUp);
-            window.addEventListener('mousemove',onMouseMove); window.addEventListener('mousedown',onMouseDown);
-            document.addEventListener('pointerlockchange',onPointerLockChange);
-            window.addEventListener('resize',onResize);
-            window.addEventListener('touchstart',onTouchStart,{passive:false});
-            window.addEventListener('touchmove',onTouchMove,{passive:false});
-            window.addEventListener('touchend',onTouchEnd);
-            restartPrompt.addEventListener('click',restartGame);
-            restartPrompt.addEventListener('touchend',e=>{ e.preventDefault(); restartGame(); });
-            window.addEventListener('contextmenu',e=>e.preventDefault());
+            setupLighting();
+            createMonster();
+            ensurePlayerArea(0, 0, 3);
+            extendPathAhead(0, 0, 0, -1);
+            updateVisibleMeshes();
+            monsterGroup.position.set(monsterGridX * CELL_SIZE, 0, monsterGridZ * CELL_SIZE);
+            playerWorldPos.set(0, 1.55, 0);
+            camera.position.copy(playerWorldPos);
+            window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('keyup', onKeyUp);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('pointerlockchange', onPointerLockChange);
+            window.addEventListener('resize', onResize);
+            window.addEventListener('touchstart', onTouchStart, { passive: false });
+            window.addEventListener('touchmove', onTouchMove, { passive: false });
+            window.addEventListener('touchend', onTouchEnd);
+            restartPrompt.addEventListener('click', restartGame);
+            restartPrompt.addEventListener('touchend', e => { e.preventDefault(); restartGame(); });
+            window.addEventListener('contextmenu', e => e.preventDefault());
             gameLoop();
         }
         init();
