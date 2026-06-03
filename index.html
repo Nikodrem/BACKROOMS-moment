@@ -5,65 +5,134 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BACKROOMS – БЕГИ</title>
   <style>
-    :root { --bg: #0a0502; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0502;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     body {
       background: var(--bg);
       overflow: hidden;
       font-family: 'Courier New', monospace;
       touch-action: none;
       cursor: none;
+      height: 100vh;
+      width: 100vw;
     }
-    canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
+    canvas {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
     #vhs-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 2; pointer-events: none; mix-blend-mode: overlay;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+      mix-blend-mode: overlay;
     }
     #scanlines {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 3; pointer-events: none;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.04) 2px,
+        rgba(0, 0, 0, 0.04) 4px
+      );
     }
     #vignette {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 4; pointer-events: none;
-      box-shadow: inset 0 0 200px 80px rgba(0,0,0,0.75);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 4;
+      pointer-events: none;
+      box-shadow: inset 0 0 200px 80px rgba(0, 0, 0, 0.75);
     }
     #hud {
-      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-      z-index: 5; display: flex; flex-direction: column; align-items: center;
-      gap: 8px; pointer-events: none;
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
     }
     #stamina-bar {
-      width: 220px; height: 6px; background: rgba(255,255,255,0.12);
-      border-radius: 3px; border: 1px solid rgba(255,255,255,0.25);
+      width: 220px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
       overflow: hidden;
     }
     #stamina-fill {
-      height: 100%; width: 100%;
+      height: 100%;
+      width: 100%;
       background: linear-gradient(90deg, #ff4444, #ffaa44, #44ff44);
       transition: width 0.1s;
     }
     #message-box {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      z-index: 10; pointer-events: none;
-      display: flex; flex-direction: column; align-items: center;
-      gap: 20px; opacity: 0; transition: opacity 0.4s;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      opacity: 0;
+      transition: opacity 0.4s;
     }
-    #message-box.show { opacity: 1; }
+    #message-box.show {
+      opacity: 1;
+    }
     #message-text {
-      color: #ffccaa; font-size: 2.4rem; letter-spacing: 6px;
-      text-shadow: 0 0 30px #ff3300, 0 0 60px #aa1100; text-align: center;
+      color: #ffccaa;
+      font-size: 2.4rem;
+      letter-spacing: 6px;
+      text-shadow: 0 0 30px #ff3300, 0 0 60px #aa1100;
+      text-align: center;
     }
     #instruction-text {
-      color: #eeddcc; font-size: 1.2rem; letter-spacing: 3px;
-      text-shadow: 0 0 15px #cc6600; text-align: center; line-height: 2;
+      color: #eeddcc;
+      font-size: 1.2rem;
+      letter-spacing: 3px;
+      text-shadow: 0 0 15px #cc6600;
+      text-align: center;
+      line-height: 2;
       transition: opacity 0.6s;
     }
     #distance {
-      position: fixed; top: 25px; right: 30px; z-index: 5;
-      pointer-events: none; color: rgba(255,200,150,0.7);
-      font-size: 0.9rem; letter-spacing: 2px;
+      position: fixed;
+      top: 25px;
+      right: 30px;
+      z-index: 5;
+      pointer-events: none;
+      color: rgba(255, 200, 150, 0.7);
+      font-size: 0.9rem;
+      letter-spacing: 2px;
     }
   </style>
 </head>
@@ -82,13 +151,17 @@
   <div id="distance">ДИСТАНЦИЯ: 0м</div>
 
   <script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
   </script>
 
   <script type="module">
     import * as THREE from 'three';
 
-    // ======================== ДОМ-ЭЛЕМЕНТЫ ========================
+    // ======================== DOM ЭЛЕМЕНТЫ ========================
     const canvas = document.getElementById('game');
     const vhsCanvas = document.getElementById('vhs-overlay');
     const ctxVhs = vhsCanvas.getContext('2d');
@@ -100,93 +173,189 @@
 
     // ======================== THREE.JS НАСТРОЙКА ========================
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // ограничение для производительности
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = false; // БЕЗ ТЕНЕЙ
+    renderer.shadowMap.enabled = false; // БЕЗ ТЕНЕЙ – ОГРОМНЫЙ ПРИРОСТ FPS
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.9;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#1a1008');
+    scene.background = new THREE.Color('#1a1008'); // коричнево-черный, не полностью черный
     scene.fog = new THREE.FogExp2('#1a1008', 0.00025);
 
     const camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.3, 60);
     camera.position.set(0, 1.7, 0);
     camera.rotation.order = 'YXZ';
+    camera.lookAt(0, 1.7, -1); // смотрит вдоль коридора
 
     // ======================== ПРОЦЕДУРНЫЕ ТЕКСТУРЫ ========================
     function createWallTexture() {
       const size = 128;
-      const c = document.createElement('canvas'); c.width = size; c.height = size;
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
       const ctx = c.getContext('2d');
-      ctx.fillStyle = '#d4b96a'; ctx.fillRect(0,0,size,size);
-      for(let i=0;i<500;i++){ ctx.fillStyle=`rgba(180,140,70,${Math.random()*0.1})`; ctx.fillRect(Math.random()*size,Math.random()*size,4+Math.random()*8,2+Math.random()*4);}
+      ctx.fillStyle = '#d4b96a';
+      ctx.fillRect(0, 0, size, size);
+      // Рисунок обоев: мелкие точки и полосы
+      for (let i = 0; i < 400; i++) {
+        ctx.fillStyle = `rgba(180,140,70,${Math.random() * 0.1})`;
+        ctx.fillRect(Math.random() * size, Math.random() * size, 3 + Math.random() * 6, 1 + Math.random() * 3);
+      }
+      // Вертикальные полосы
+      for (let x = 0; x < size; x += 32) {
+        ctx.fillStyle = 'rgba(0,0,0,0.03)';
+        ctx.fillRect(x + 14, 0, 4, size);
+      }
       return new THREE.CanvasTexture(c);
     }
+
     function createFloorTexture() {
       const size = 128;
-      const c = document.createElement('canvas'); c.width = size; c.height = size;
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
       const ctx = c.getContext('2d');
-      ctx.fillStyle = '#6b5c48'; ctx.fillRect(0,0,size,size);
-      for(let i=0;i<2000;i++){ const b=70+Math.random()*45; ctx.fillStyle=`rgba(${b},${b*0.8},${b*0.5},0.07)`; ctx.fillRect(Math.random()*size,Math.random()*size,2,2);}
+      ctx.fillStyle = '#6b5c48';
+      ctx.fillRect(0, 0, size, size);
+      // Ковровое покрытие
+      for (let i = 0; i < 1500; i++) {
+        const b = 70 + Math.random() * 40;
+        ctx.fillStyle = `rgba(${b},${b * 0.8},${b * 0.5},0.06)`;
+        ctx.fillRect(Math.random() * size, Math.random() * size, 1.5, 1.5);
+      }
       return new THREE.CanvasTexture(c);
     }
+
     function createCeilingTexture() {
       const size = 64;
-      const c = document.createElement('canvas'); c.width = size; c.height = size;
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
       const ctx = c.getContext('2d');
-      ctx.fillStyle = '#e8e4d8'; ctx.fillRect(0,0,size,size);
+      ctx.fillStyle = '#e8e4d8';
+      ctx.fillRect(0, 0, size, size);
+      // Потолочная плитка
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < size; x += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, size);
+        ctx.stroke();
+      }
+      for (let y = 0; y < size; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.stroke();
+      }
       return new THREE.CanvasTexture(c);
     }
+
     function createMonsterTexture() {
       const size = 256;
-      const c = document.createElement('canvas'); c.width = size; c.height = size;
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
       const ctx = c.getContext('2d');
-      const grad = ctx.createLinearGradient(0,0,size,size);
-      grad.addColorStop(0,'#3d1a1a'); grad.addColorStop(0.5,'#4a2020'); grad.addColorStop(1,'#2d1010');
-      ctx.fillStyle = grad; ctx.fillRect(0,0,size,size);
-      for(let i=0;i<800;i++){
-        const x=Math.random()*size,y=Math.random()*size,r=3+Math.random()*18;
-        const sg=ctx.createRadialGradient(x,y,0,x,y,r);
-        sg.addColorStop(0,`rgba(${30+Math.random()*55},${Math.random()*25},${Math.random()*20},0.45)`);
-        sg.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      // Темная плоть с градиентом
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#3d1a1a');
+      grad.addColorStop(0.5, '#4a2020');
+      grad.addColorStop(1, '#2d1010');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+      // Пятна и волдыри
+      for (let i = 0; i < 600; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 3 + Math.random() * 15;
+        const sg = ctx.createRadialGradient(x, y, 0, x, y, r);
+        sg.addColorStop(0, `rgba(${30 + Math.random() * 50},${Math.random() * 20},${Math.random() * 15},0.4)`);
+        sg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = sg;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.strokeStyle='rgba(80,20,20,0.35)'; ctx.lineWidth=0.6;
-      for(let i=0;i<200;i++){ctx.beginPath();let sx=Math.random()*size,sy=Math.random()*size;ctx.moveTo(sx,sy);for(let j=0;j<5;j++){sx+=(Math.random()-0.5)*55;sy+=(Math.random()-0.5)*55;ctx.lineTo(sx,sy);}ctx.stroke();}
+      // Вены
+      ctx.strokeStyle = 'rgba(80,20,20,0.3)';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < 150; i++) {
+        ctx.beginPath();
+        let sx = Math.random() * size;
+        let sy = Math.random() * size;
+        ctx.moveTo(sx, sy);
+        for (let j = 0; j < 4; j++) {
+          sx += (Math.random() - 0.5) * 55;
+          sy += (Math.random() - 0.5) * 55;
+          ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      }
       return new THREE.CanvasTexture(c);
     }
 
-    const wallTex = createWallTexture(); wallTex.colorSpace = THREE.SRGBColorSpace;
-    const floorTex = createFloorTexture(); floorTex.colorSpace = THREE.SRGBColorSpace;
-    floorTex.wrapS = THREE.RepeatWrapping; floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(2,2);
-    const ceilTex = createCeilingTexture(); ceilTex.colorSpace = THREE.SRGBColorSpace;
-    ceilTex.wrapS = THREE.RepeatWrapping; ceilTex.wrapT = THREE.RepeatWrapping; ceilTex.repeat.set(2,2);
-    const monsterTex = createMonsterTexture(); monsterTex.colorSpace = THREE.SRGBColorSpace;
+    const wallTex = createWallTexture();
+    wallTex.colorSpace = THREE.SRGBColorSpace;
+    const floorTex = createFloorTexture();
+    floorTex.colorSpace = THREE.SRGBColorSpace;
+    floorTex.wrapS = THREE.RepeatWrapping;
+    floorTex.wrapT = THREE.RepeatWrapping;
+    floorTex.repeat.set(2, 2);
+    const ceilTex = createCeilingTexture();
+    ceilTex.colorSpace = THREE.SRGBColorSpace;
+    ceilTex.wrapS = THREE.RepeatWrapping;
+    ceilTex.wrapT = THREE.RepeatWrapping;
+    ceilTex.repeat.set(2, 2);
+    const monsterTex = createMonsterTexture();
+    monsterTex.colorSpace = THREE.SRGBColorSpace;
 
     // ======================== МАТЕРИАЛЫ ========================
-    const matWall = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.75, metalness: 0.02, color: '#e8d59c' });
-    const matFloor = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.9, metalness: 0, color: '#7a6b55' });
-    const matCeil = new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.8, metalness: 0.03, color: '#e8e2d4' });
-    const matMonster = new THREE.MeshStandardMaterial({ map: monsterTex, roughness: 0.4, metalness: 0.05, color: '#cc9988' });
+    const matWall = new THREE.MeshStandardMaterial({
+      map: wallTex,
+      roughness: 0.75,
+      metalness: 0.02,
+      color: '#e8d59c'
+    });
+    const matFloor = new THREE.MeshStandardMaterial({
+      map: floorTex,
+      roughness: 0.9,
+      metalness: 0,
+      color: '#7a6b55'
+    });
+    const matCeil = new THREE.MeshStandardMaterial({
+      map: ceilTex,
+      roughness: 0.8,
+      metalness: 0.03,
+      color: '#e8e2d4'
+    });
+    const matMonster = new THREE.MeshStandardMaterial({
+      map: monsterTex,
+      roughness: 0.4,
+      metalness: 0.05,
+      color: '#cc9988'
+    });
 
-    // ======================== ОСВЕЩЕНИЕ (ТОЛЬКО ОДНА ЛАМПА) ========================
-    const ambientLight = new THREE.AmbientLight('#4a3a2a', 0.8); // чуть ярче, чтобы компенсировать отсутствие локальных ламп
+    // ======================== ОСВЕЩЕНИЕ ========================
+    const ambientLight = new THREE.AmbientLight('#4a3a2a', 0.8);
     scene.add(ambientLight);
-    const playerLight = new THREE.PointLight('#fffbe8', 35, 15, 2); // яркий, большой радиус
+    // Один мощный точечный свет, следующий за игроком
+    const playerLight = new THREE.PointLight('#fffbe8', 35, 15, 2);
     playerLight.position.set(0, 2.8, 0);
     scene.add(playerLight);
 
-    // ======================== СИСТЕМА КОРИДОРОВ (оптимизированная) ========================
+    // ======================== СИСТЕМА КОРИДОРОВ ========================
     const CELL_SIZE = 4.0;
     const WALL_HEIGHT = 3.0;
     const WALL_THICK = 0.15;
-    const corridorCells = new Map(); // key "x,z" -> { group, floor, ceil, walls: {n,s,e,w} }
+    const corridorCells = new Map(); // key "x,z" → { group, walls: {n,s,e,w} }
 
     function createWallMesh(x, z, rotY) {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICK), matWall);
-      mesh.position.set(x, WALL_HEIGHT/2, z);
+      mesh.position.set(x, WALL_HEIGHT / 2, z);
       mesh.rotation.y = rotY;
       return mesh;
     }
@@ -201,29 +370,30 @@
 
       // Пол
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE), matFloor);
-      floor.rotation.x = -Math.PI/2;
+      floor.rotation.x = -Math.PI / 2;
       floor.position.set(wx, 0.01, wz);
       group.add(floor);
 
       // Потолок
       const ceil = new THREE.Mesh(new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE), matCeil);
-      ceil.rotation.x = Math.PI/2;
+      ceil.rotation.x = Math.PI / 2;
       ceil.position.set(wx, WALL_HEIGHT, wz);
       group.add(ceil);
 
-      // Стены (создаём все, потом удалим лишние)
+      // Стены (создаём все четыре, потом удалим лишние)
       const walls = {
-        n: createWallMesh(wx, wz - CELL_SIZE/2, 0),
-        s: createWallMesh(wx, wz + CELL_SIZE/2, 0),
-        e: createWallMesh(wx + CELL_SIZE/2, wz, Math.PI/2),
-        w: createWallMesh(wx - CELL_SIZE/2, wz, Math.PI/2),
+        n: createWallMesh(wx, wz - CELL_SIZE / 2, 0),
+        s: createWallMesh(wx, wz + CELL_SIZE / 2, 0),
+        e: createWallMesh(wx + CELL_SIZE / 2, wz, Math.PI / 2),
+        w: createWallMesh(wx - CELL_SIZE / 2, wz, Math.PI / 2),
       };
       Object.values(walls).forEach(w => group.add(w));
 
       scene.add(group);
-      corridorCells.set(key, { group, walls });
+      const cellData = { group, walls };
+      corridorCells.set(key, cellData);
 
-      // Удаляем стены, смежные с уже существующими соседями
+      // Удаляем стены, граничащие с уже существующими соседями
       const neighbors = [
         { dx: 0, dz: -1, my: 'n', their: 's' },
         { dx: 0, dz: 1, my: 's', their: 'n' },
@@ -231,13 +401,13 @@
         { dx: -1, dz: 0, my: 'w', their: 'e' },
       ];
       neighbors.forEach(({ dx, dz, my, their }) => {
-        const nkey = `${gx+dx},${gz+dz}`;
+        const nkey = `${gx + dx},${gz + dz}`;
         if (corridorCells.has(nkey)) {
           const neighbor = corridorCells.get(nkey);
           // убираем свою стену
-          if (walls[my]) {
-            group.remove(walls[my]);
-            walls[my] = null;
+          if (cellData.walls[my]) {
+            group.remove(cellData.walls[my]);
+            cellData.walls[my] = null;
           }
           // убираем стену соседа
           if (neighbor.walls[their]) {
@@ -274,28 +444,52 @@
 
     // ======================== МОНСТР ========================
     let monsterGroup;
+    let monsterGlowLight; // ссылка на свет внутри монстра для динамической яркости
     const monsterPos = new THREE.Vector3(0, 0, -16);
 
     function createMonster() {
       monsterGroup = new THREE.Group();
-      
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 1.4, 8), matMonster);
-      torso.position.y = 1.5; monsterGroup.add(torso);
-      
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), matMonster);
-      head.position.y = 2.4; monsterGroup.add(head);
-      
+
+      // Торс
+      const torsoGeo = new THREE.CylinderGeometry(0.35, 0.4, 1.4, 8);
+      const torso = new THREE.Mesh(torsoGeo, matMonster);
+      torso.position.y = 1.5;
+      monsterGroup.add(torso);
+
+      // Голова
+      const headGeo = new THREE.SphereGeometry(0.35, 8, 6);
+      const head = new THREE.Mesh(headGeo, matMonster);
+      head.position.y = 2.4;
+      monsterGroup.add(head);
+
+      // Длинные руки с кистями
       for (let side = -1; side <= 1; side += 2) {
-        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.1, 6), matMonster);
-        arm.position.set(side * 0.5, 1.8, 0); arm.rotation.z = side * 0.4; monsterGroup.add(arm);
-        const hand = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6), matMonster);
-        hand.position.set(side * 0.65, 1.2, 0.2); hand.rotation.z = side * 0.7; monsterGroup.add(hand);
+        const armGeo = new THREE.CylinderGeometry(0.1, 0.12, 1.1, 6);
+        const arm = new THREE.Mesh(armGeo, matMonster);
+        arm.position.set(side * 0.5, 1.8, 0);
+        arm.rotation.z = side * 0.4;
+        monsterGroup.add(arm);
+
+        const handGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6);
+        const hand = new THREE.Mesh(handGeo, matMonster);
+        hand.position.set(side * 0.65, 1.2, 0.2);
+        hand.rotation.z = side * 0.7;
+        monsterGroup.add(hand);
       }
+
+      // Ноги
       for (let side = -1; side <= 1; side += 2) {
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.9, 6), matMonster);
-        leg.position.set(side * 0.2, 0.8, 0); monsterGroup.add(leg);
+        const legGeo = new THREE.CylinderGeometry(0.12, 0.14, 0.9, 6);
+        const leg = new THREE.Mesh(legGeo, matMonster);
+        leg.position.set(side * 0.2, 0.8, 0);
+        monsterGroup.add(leg);
       }
-      
+
+      // Собственный свет монстра (красноватый)
+      monsterGlowLight = new THREE.PointLight('#441111', 2, 6, 2);
+      monsterGlowLight.position.set(0, 1.6, 0);
+      monsterGroup.add(monsterGlowLight);
+
       monsterGroup.position.copy(monsterPos);
       scene.add(monsterGroup);
     }
@@ -303,7 +497,8 @@
     // ======================== ИГРОК ========================
     const player = {
       pos: new THREE.Vector3(0, 1.7, 0),
-      yaw: 0, pitch: 0,
+      yaw: 0,
+      pitch: 0,
       stamina: 100,
       sprint: false,
       speed: 3.2,
@@ -320,21 +515,35 @@
       gameStarted = false;
       gameOver = false;
       if (deathTimer) clearTimeout(deathTimer);
-      if (monsterGroup) { scene.remove(monsterGroup); monsterGroup = null; }
+      // Удаляем старого монстра
+      if (monsterGroup) {
+        scene.remove(monsterGroup);
+        monsterGroup = null;
+        monsterGlowLight = null;
+      }
+      // Удаляем все коридоры
       corridorCells.forEach(c => scene.remove(c.group));
       corridorCells.clear();
+      // Сбрасываем игрока
       player.pos.set(0, 1.7, 0);
-      player.yaw = 0; player.pitch = 0;
-      player.stamina = 100; player.dist = 0;
+      player.yaw = 0;
+      player.pitch = 0;
+      player.stamina = 100;
+      player.dist = 0;
       player.lastPos.copy(player.pos);
+      // Прячем сообщения
       msgBox.classList.remove('show');
       msgText.textContent = '';
       instrText.style.opacity = '0';
       distanceEl.textContent = 'ДИСТАНЦИЯ: 0м';
+      // Генерируем начальные коридоры
       ensureArea(0, 0, 6);
+      // Создаём монстра далеко
       monsterPos.set(0, 0, -16);
       createMonster();
-      instrText.innerHTML = 'КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
+      // Показываем инструкцию
+      instrText.innerHTML =
+        'КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
       instrText.style.opacity = '1';
       msgBox.classList.add('show');
     }
@@ -347,8 +556,10 @@
       instrText.style.opacity = '0';
       player.pos.set(0, 1.7, 0);
       player.lastPos.copy(player.pos);
-      player.yaw = 0; player.pitch = 0;
-      player.stamina = 100; player.dist = 0;
+      player.yaw = 0;
+      player.pitch = 0;
+      player.stamina = 100;
+      player.dist = 0;
       monsterPos.set(0, 0, -16);
       if (monsterGroup) monsterGroup.position.copy(monsterPos);
       canvas.requestPointerLock();
@@ -365,37 +576,46 @@
       if (deathTimer) clearTimeout(deathTimer);
       deathTimer = setTimeout(() => {
         msgText.textContent = '';
-        instrText.innerHTML = 'КЛИКНИТЕ, ЧТОБЫ ПОПРОБОВАТЬ СНОВА<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР';
+        instrText.innerHTML =
+          'КЛИКНИТЕ, ЧТОБЫ ПОПРОБОВАТЬ СНОВА<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР';
         instrText.style.opacity = '1';
       }, 2500);
     }
 
     // ======================== УПРАВЛЕНИЕ ========================
     const keys = {};
-    window.addEventListener('keydown', e => {
+    window.addEventListener('keydown', (e) => {
       keys[e.key.toLowerCase()] = true;
       if (e.key === 'Shift') player.sprint = true;
     });
-    window.addEventListener('keyup', e => {
+    window.addEventListener('keyup', (e) => {
       keys[e.key.toLowerCase()] = false;
       if (e.key === 'Shift') player.sprint = false;
     });
-    let mouseDX = 0, mouseDY = 0;
-    document.addEventListener('mousemove', e => {
+
+    let mouseDX = 0,
+      mouseDY = 0;
+    document.addEventListener('mousemove', (e) => {
       if (document.pointerLockElement === canvas) {
         mouseDX += e.movementX;
         mouseDY += e.movementY;
       }
     });
+
     canvas.addEventListener('click', () => {
-      if (!gameStarted && !gameOver) startGame();
-      else if (gameOver) resetGame();
-      else canvas.requestPointerLock();
+      if (!gameStarted && !gameOver) {
+        startGame();
+      } else if (gameOver) {
+        resetGame();
+      } else {
+        canvas.requestPointerLock();
+      }
     });
 
-    // ======================== VHS (БЫСТРЫЙ) ========================
+    // ======================== VHS ЭФФЕКТ (БЫСТРЫЙ) ========================
     const noiseCanvas = document.createElement('canvas');
-    noiseCanvas.width = 128; noiseCanvas.height = 128;
+    noiseCanvas.width = 128;
+    noiseCanvas.height = 128;
     const nctx = noiseCanvas.getContext('2d');
     const noiseData = nctx.createImageData(128, 128);
     for (let i = 0; i < noiseData.data.length; i += 4) {
@@ -413,12 +633,14 @@
       vhsCanvas.height = window.innerHeight;
       const ctx = vhsCanvas;
       ctx.clearRect(0, 0, vhsCanvas.width, vhsCanvas.height);
+      // Шумовой слой
       ctx.globalAlpha = 0.07 + vhsGlitch * 0.12;
       for (let y = 0; y < vhsCanvas.height; y += 128) {
         for (let x = 0; x < vhsCanvas.width; x += 128) {
           ctx.drawImage(noiseCanvas, x, y);
         }
       }
+      // Горизонтальные глитч-полосы
       if (vhsGlitch > 0.15) {
         ctx.globalAlpha = vhsGlitch * 0.55;
         ctx.fillStyle = '#ffffff';
@@ -438,7 +660,8 @@
       const master = audioCtx.createGain();
       master.gain.value = 0.25;
       master.connect(audioCtx.destination);
-      
+
+      // Гул люминесцентных ламп
       const buzz = audioCtx.createOscillator();
       buzz.type = 'sawtooth';
       buzz.frequency.value = 55;
@@ -447,7 +670,8 @@
       buzz.connect(buzzGain);
       buzzGain.connect(master);
       buzz.start();
-      
+
+      // Фоновый шум
       const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
       const data = noiseBuffer.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = (Math.random() - 0.5) * 0.06;
@@ -470,13 +694,14 @@
         return;
       }
       const dt = Math.min(delta, 0.1);
-      
-      // Поворот
+
+      // Поворот камеры
       player.yaw -= mouseDX * 0.002;
       player.pitch -= mouseDY * 0.002;
       player.pitch = Math.max(-1.4, Math.min(1.4, player.pitch));
-      mouseDX = 0; mouseDY = 0;
-      
+      mouseDX = 0;
+      mouseDY = 0;
+
       // Стамина
       if (player.sprint && (keys['w'] || keys['arrowup']) && player.stamina > 0) {
         player.stamina -= 18 * dt;
@@ -486,7 +711,7 @@
       }
       const canSprint = player.sprint && player.stamina > 0 && (keys['w'] || keys['arrowup']);
       player.speed = canSprint ? 5.8 : 3.2;
-      
+
       // Движение
       const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
       const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
@@ -498,16 +723,18 @@
       if (move.length() > 1) move.normalize();
       player.pos.add(move.multiplyScalar(player.speed * dt));
       player.pos.y = 1.7;
-      
+
+      // Дистанция
       player.dist += player.pos.distanceTo(player.lastPos);
       player.lastPos.copy(player.pos);
       distanceEl.textContent = `ДИСТАНЦИЯ: ${Math.floor(player.dist)}м`;
-      
+
+      // Камера
       camera.position.copy(player.pos);
       camera.rotation.y = player.yaw;
       camera.rotation.x = player.pitch;
-      
-      // Генерация клеток
+
+      // Генерация коридоров при переходе в новую клетку
       const gx = Math.round(player.pos.x / CELL_SIZE);
       const gz = Math.round(player.pos.z / CELL_SIZE);
       if (gx !== lastCell.x || gz !== lastCell.z) {
@@ -515,17 +742,17 @@
         cleanupFarCells(gx, gz, 11);
         lastCell = { x: gx, z: gz };
       }
-      
-      // Свет за игроком
+
+      // Двигаем свет за игроком
       playerLight.position.set(player.pos.x, player.pos.y + 1.1, player.pos.z);
-      
+
       // Монстр
       if (!monsterGroup) return;
       const lookDir = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
       const toMonster = monsterPos.clone().sub(player.pos);
       const dist = toMonster.length();
       const playerLooks = toMonster.normalize().dot(lookDir) > 0.4 && dist < 20;
-      
+
       const monsterSpeed = playerLooks ? 2.0 : 4.5;
       if (dist > 0.7) {
         const dir = toMonster.clone().normalize();
@@ -533,18 +760,25 @@
         monsterGroup.position.copy(monsterPos);
         monsterGroup.lookAt(player.pos.x, 1.5, player.pos.z);
       }
-      
-      // VHS глитч
+
+      // VHS глитч от близости монстра
       vhsGlitch = Math.max(0, (7 - dist) / 7) * 0.7;
       if (dist < 3) vhsGlitch = 0.95;
-      
-      if (dist < 0.8) endGame();
-      
+      if (monsterGlowLight) {
+        monsterGlowLight.intensity = 1.5 + Math.max(0, (10 - dist)) * 1.2;
+      }
+
+      // Проверка смерти
+      if (dist < 0.8) {
+        endGame();
+      }
+
+      // Стамина-бар
       staminaFill.style.width = player.stamina + '%';
       if (player.stamina < 30) staminaFill.style.background = '#ff3333';
       else if (player.stamina < 60) staminaFill.style.background = 'linear-gradient(90deg, #ff4444, #ffaa44)';
       else staminaFill.style.background = 'linear-gradient(90deg, #ff4444, #ffaa44, #44ff44)';
-      
+
       updateVHS();
     }
 
@@ -558,24 +792,31 @@
       render();
     }
 
-    // ======================== СТАРТ ========================
+    // ======================== ИНИЦИАЛИЗАЦИЯ И ЗАПУСК ========================
     window.addEventListener('resize', () => {
       renderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
     });
 
-    // Начальная сцена
+    // Создаём начальную локацию
     ensureArea(0, 0, 6);
+    // Создаём монстра
     monsterPos.set(0, 0, -16);
     createMonster();
-    instrText.innerHTML = 'КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
+    // Показываем стартовый текст
+    instrText.innerHTML =
+      'КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
     instrText.style.opacity = '1';
     msgBox.classList.add('show');
+
+    // Запускаем игровой цикл
     gameLoop();
 
+    // Инициализация звука при первом клике
     canvas.addEventListener('click', initAudio, { once: true });
-    console.log('✅ Игра готова. Кликните для старта.');
+
+    console.log('✅ BACKROOMS – БЕГИ: игра полностью готова. Локация загружена, ждем клика.');
   </script>
 </body>
 </html>
