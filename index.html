@@ -47,7 +47,6 @@
       background: transparent;
     }
 
-    /* Glass header above table */
     #game-header {
       position: relative;
       z-index: 15;
@@ -138,7 +137,6 @@
     }
     .glass-btn.accent:hover { background: rgba(255,159,67,0.4); }
 
-    /* Canvas container keeps table aspect ratio */
     #canvas-container {
       position: relative;
       width: 100%;
@@ -153,7 +151,6 @@
       height: 100%;
     }
 
-    /* Power meter inside canvas container */
     #power-meter-container {
       position: absolute;
       bottom: 10px;
@@ -179,7 +176,6 @@
       transition: width 0.05s linear;
     }
 
-    /* Overlays (modals) */
     .overlay-screen, .settings-modal-overlay {
       position: absolute;
       inset: 0;
@@ -238,7 +234,6 @@
     .mode-name { font-weight: 700; font-size: 14px; }
     .mode-desc { font-size: 10px; color: var(--text-secondary); }
 
-    /* Settings modal */
     .settings-content {
       padding: 24px;
       display: flex;
@@ -310,7 +305,6 @@
 </head>
 <body>
 <div id="game-wrapper">
-  <!-- Header above table -->
   <div id="game-header">
     <div class="hud-group">
       <div class="glass-badge player-indicator" id="player-indicator">🎱 Вы</div>
@@ -320,7 +314,6 @@
     <button class="glass-btn" id="settings-toggle" title="Настройки">⚙️</button>
   </div>
 
-  <!-- Canvas area -->
   <div id="canvas-container">
     <canvas id="pool-canvas"></canvas>
     <div id="power-meter-container">
@@ -328,10 +321,8 @@
     </div>
   </div>
 
-  <!-- Toast -->
   <div class="glass-badge" id="toast"></div>
 
-  <!-- Mode selection overlay -->
   <div class="overlay-screen" id="mode-screen">
     <div class="overlay-content glass-panel" style="background: var(--glass-bg); backdrop-filter: blur(var(--blur)); border: 1px solid var(--glass-border); border-radius: var(--radius);">
       <h2>🎱 Выберите режим</h2>
@@ -357,7 +348,6 @@
     </div>
   </div>
 
-  <!-- Win overlay -->
   <div class="overlay-screen hidden" id="win-screen">
     <div class="overlay-content glass-panel" style="background: var(--glass-bg); backdrop-filter: blur(var(--blur)); border: 1px solid var(--glass-border); border-radius: var(--radius);">
       <h2 id="win-title">🏆</h2>
@@ -367,7 +357,6 @@
     </div>
   </div>
 
-  <!-- Settings modal overlay -->
   <div class="settings-modal-overlay hidden" id="settings-modal">
     <div class="glass-panel settings-content" style="background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: var(--radius);">
       <h3 style="margin-bottom:6px;">⚙️ Настройки</h3>
@@ -481,7 +470,7 @@
     let aimDirection = {x:1,y:0}, placingCueBall = false, gameOverData = null;
     let totalPocketedByP1=[], totalPocketedByP2=[], breakShotTaken=false, lowestBall9ball=1;
     let particles=[], lastShotWasFoul=false, cueBallInHand=false, handPlacementLegal=true;
-    const MAX_POWER = 65; // significantly increased
+    const MAX_POWER = 2000; // было 65, теперь шары летают нормально
 
     class Ball {
       constructor(id,x,y) {
@@ -720,7 +709,6 @@
       if(len>1) { aimDirection.x=dx/len; aimDirection.y=dy/len; }
     }
 
-    // AI
     function getAimNoise() { return aiDifficulty==='easy'?0.12:aiDifficulty==='medium'?0.04:0.008; }
     function getAIPowerVar() { return aiDifficulty==='easy'?0.2:aiDifficulty==='medium'?0.1:0.03; }
     function findBestShot() {
@@ -766,13 +754,12 @@
       if(gameState!=='aiming') return;
       const shot=findBestShot(); if(!shot) return;
       aimDirection.x=shot.aimNx; aimDirection.y=shot.aimNy;
-      let basePower = aiDifficulty==='easy'?0.2+Math.random()*0.3:aiDifficulty==='medium'?0.3+Math.random()*0.4:0.4+Math.random()*0.5;
+      let basePower = aiDifficulty==='easy'?0.15+Math.random()*0.25:aiDifficulty==='medium'?0.25+Math.random()*0.35:0.35+Math.random()*0.45;
       basePower += (Math.random()-0.5)*getAIPowerVar();
-      basePower = Math.max(0.15, Math.min(0.95, basePower));
+      basePower = Math.max(0.1, Math.min(0.9, basePower));
       setTimeout(()=>{ if(gameState==='aiming') shootCueBall(basePower); }, 350+Math.random()*400);
     }
 
-    // Rendering
     function drawTable() {
       const frameGrad=ctx.createLinearGradient(0,0,INTERNAL_W,INTERNAL_H);
       frameGrad.addColorStop(0,'#5c3a1e'); frameGrad.addColorStop(0.5,'#8b5a33'); frameGrad.addColorStop(1,'#4a2c14');
@@ -908,7 +895,6 @@
       placingCueBall=false; cueBallInHand=false; gameState='aiming'; showToast('Биток размещён','info'); updateHUD();
     }
 
-    // Event listeners
     canvas.addEventListener('mousemove', e=>{
       mouseX=e.clientX; mouseY=e.clientY;
       if(gameState==='aiming'||gameState==='charging') updateAimDirection();
@@ -941,7 +927,6 @@
     canvas.addEventListener('touchmove', e=>{ e.preventDefault(); if(e.touches.length>0){ mouseX=e.touches[0].clientX; mouseY=e.touches[0].clientY; if(gameState==='aiming'||gameState==='charging') updateAimDirection(); } }, {passive:false});
     canvas.addEventListener('touchend', e=>{ e.preventDefault(); if(gameState==='charging'){ shootCueBall(Math.min((Date.now()-chargeStartTime)/maxChargeTime,1)); } mouseDown=false; powerMeterContainer.classList.remove('active'); }, {passive:false});
 
-    // UI buttons
     settingsToggle.addEventListener('click', ()=>{ initAudio(); settingsModal.classList.toggle('hidden'); });
     document.getElementById('settings-close-btn').addEventListener('click', ()=> settingsModal.classList.add('hidden'));
     document.getElementById('restart-btn-modal').addEventListener('click', ()=>{ initAudio(); resetGame(); settingsModal.classList.add('hidden'); showToast('Игра перезапущена','info'); });
@@ -983,7 +968,6 @@
       requestAnimationFrame(gameLoop);
     }
     init();
-    console.log('🎱 Бильярд — сила удара увеличена, интерфейс над столом');
   })();
 </script>
 </body>
