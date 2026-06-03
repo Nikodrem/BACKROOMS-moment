@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Backrooms: The Chase – Corridor Fixed</title>
+    <title>Backrooms: The Chase – Solid Ground</title>
     <style>
         :root { --bg: #000; }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -112,7 +112,7 @@
         scene.background = new THREE.Color(0x1a1408);
         scene.fog = new THREE.FogExp2(0x1a1408, 0.0002);
         const camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.3, 80);
-        camera.position.set(0, 1.55, 0);
+        camera.position.set(0, 1.5, 0);
         camera.rotation.order = 'YXZ';
 
         // ── AUDIO ──
@@ -171,17 +171,36 @@
 
         // ── CORRIDOR DATA ──
         const CELL_SIZE = 4;
+        const VIEW_RADIUS = 16;
         const pathCells = new Set();
         const cellDataMap = new Map();
         function cellKey(x,z){ return `${x},${z}`; }
         function isCorridor(x,z){ return pathCells.has(cellKey(x,z)); }
-        function addPathCell(x,z,forceLight=false){
-            const key=cellKey(x,z); if(pathCells.has(key)) return;
-            pathCells.add(key); cellDataMap.set(key,{ hasLight: forceLight || Math.random()<0.55, lightFlickerPhase: Math.random()*Math.PI*2 });
+        
+        // Добавление клетки с немедленным созданием меша, если рядом
+        function addPathCell(x, z, forceLight = false) {
+            const key = cellKey(x, z);
+            if (pathCells.has(key)) return;
+            pathCells.add(key);
+            const data = {
+                hasLight: forceLight || Math.random() < 0.55,
+                lightFlickerPhase: Math.random() * Math.PI * 2
+            };
+            cellDataMap.set(key, data);
+            // Если клетка в радиусе видимости, сразу строим меш
+            if (Math.abs(x - playerGridX) + Math.abs(z - playerGridZ) <= VIEW_RADIUS) {
+                createCellMeshes(x, z);
+            }
         }
-        function removePathCell(x,z){ const key=cellKey(x,z); pathCells.delete(key); cellDataMap.delete(key); }
+        
+        function removePathCell(x, z) {
+            const key = cellKey(x, z);
+            if (!pathCells.has(key)) return;
+            pathCells.delete(key);
+            cellDataMap.delete(key);
+            removeCellMeshes(key);
+        }
 
-        // Безопасная область только вокруг игрока (радиус 1, чтобы не убирать все стены)
         function ensurePlayerArea(px, pz, radius = 1) {
             for (let dx = -radius; dx <= radius; dx++) {
                 for (let dz = -radius; dz <= radius; dz++) {
@@ -192,8 +211,7 @@
             }
         }
 
-        // Генерация прямого коридора в указанном направлении
-        function extendPathAhead(px, pz, dirX, dirZ){
+        function extendPathAhead(px, pz, dirX, dirZ) {
             addPathCell(px, pz, true);
             let cx = px, cz = pz;
             const steps = 8 + Math.floor(Math.random() * 5);
@@ -219,13 +237,17 @@
             }
         }
 
-        function pruneDistantCells(px, pz, maxDist = 30){
+        function pruneDistantCells(px, pz, maxDist = 30) {
             const toRemove = [];
             for (const key of pathCells) {
                 const [x, z] = key.split(',').map(Number);
-                if (Math.abs(x - px) + Math.abs(z - pz) > maxDist) toRemove.push({ x, z, key });
+                if (Math.abs(x - px) + Math.abs(z - pz) > maxDist) {
+                    toRemove.push({ x, z, key });
+                }
             }
-            for (const { x, z, key } of toRemove) removePathCell(x, z);
+            for (const { x, z, key } of toRemove) {
+                removePathCell(x, z);
+            }
         }
 
         // ── 3D MESHES ──
@@ -240,7 +262,7 @@
         const activeMeshes = new Map();
         const pointLights = [];
 
-        function createCellMeshes(cx, cz){
+        function createCellMeshes(cx, cz) {
             const key = cellKey(cx, cz);
             if (activeMeshes.has(key) || !isCorridor(cx, cz)) return;
             const worldX = cx * CELL_SIZE, worldZ = cz * CELL_SIZE;
@@ -306,7 +328,7 @@
             activeMeshes.set(key, group);
         }
 
-        function removeCellMeshes(key){
+        function removeCellMeshes(key) {
             const group = activeMeshes.get(key);
             if (!group) return;
             if (group.userData.pointLight) {
@@ -318,18 +340,21 @@
             activeMeshes.delete(key);
         }
 
-        function updateVisibleMeshes(){
-            const radius = 16;
+        function updateVisibleMeshes() {
+            // Этот метод только удаляет слишком далёкие меши; создание происходит в addPathCell
             const desired = new Set();
             for (const key of pathCells) {
                 const [x, z] = key.split(',').map(Number);
-                if (Math.abs(x - playerGridX) + Math.abs(z - playerGridZ) <= radius) desired.add(key);
+                if (Math.abs(x - playerGridX) + Math.abs(z - playerGridZ) <= VIEW_RADIUS) {
+                    desired.add(key);
+                }
             }
-            for (const key of activeMeshes.keys()) if (!desired.has(key)) removeCellMeshes(key);
-            for (const key of desired) if (!activeMeshes.has(key)) {
-                const [x, z] = key.split(',').map(Number);
-                createCellMeshes(x, z);
+            for (const key of activeMeshes.keys()) {
+                if (!desired.has(key)) {
+                    removeCellMeshes(key);
+                }
             }
+            // Ограничиваем количество точечных ламп
             while (pointLights.length > 70) {
                 const old = pointLights.shift();
                 scene.remove(old);
@@ -338,7 +363,7 @@
 
         // ── MONSTER ──
         let monsterGroup;
-        function createMonster(){
+        function createMonster() {
             monsterGroup = new THREE.Group();
             const faceTex = createMonsterFaceTexture();
             faceTex.colorSpace = THREE.SRGBColorSpace;
@@ -360,14 +385,14 @@
             monsterGroup.userData = { head, leftEye, rightEye, leftArm, rightArm };
             scene.add(monsterGroup);
         }
-        function updateMonsterPosition(){
+        function updateMonsterPosition() {
             if (!monsterGroup || gameOver) return;
             const wx = monsterGridX * CELL_SIZE, wz = monsterGridZ * CELL_SIZE;
             monsterGroup.position.lerp(new THREE.Vector3(wx, 0, wz), 0.3);
             const angle = Math.atan2(playerWorldPos.x - wx, playerWorldPos.z - wz);
             monsterGroup.rotation.y = angle;
         }
-        function updateMonsterAnimation(dt){
+        function updateMonsterAnimation(dt) {
             if (!monsterGroup || gameOver) return;
             const u = monsterGroup.userData;
             const bob = Math.sin(time * 3.5) * 0.08;
@@ -384,7 +409,7 @@
         }
 
         // ── MONSTER AI ──
-        function bfsPath(sx, sz, tx, tz){
+        function bfsPath(sx, sz, tx, tz) {
             const visited = new Set();
             const queue = [[{ x: sx, z: sz }]];
             visited.add(cellKey(sx, sz));
@@ -412,7 +437,7 @@
             }
             return null;
         }
-        function updateMonsterAI(dt){
+        function updateMonsterAI(dt) {
             if (gameOver) return;
             monsterSurgeTimer -= dt;
             monsterSurgeCooldown -= dt;
@@ -443,7 +468,7 @@
             hudEl.textContent = worldDist < 8 ? "IT'S CLOSE" : (worldDist < 16 ? "KEEP RUNNING" : "KEEP MOVING");
             hudEl.style.color = worldDist < 8 ? '#ff6644' : '#c8b87d';
         }
-        function triggerGameOver(){
+        function triggerGameOver() {
             if (gameOver) return; gameOver = true;
             jumpscareEl.classList.add('active'); restartPrompt.classList.add('visible');
             hudEl.textContent = ''; staminaFill.style.width = '0%'; setHeartbeat(0);
@@ -458,7 +483,7 @@
         }
 
         // ── PLAYER ──
-        let playerWorldPos = new THREE.Vector3(0, 1.55, 0);
+        let playerWorldPos = new THREE.Vector3(0, 1.5, 0);
         let playerGridX = 0, playerGridZ = 0;
         let stamina = 100, isSprinting = false;
         const NORMAL_SPEED = 7.5, SPRINT_SPEED = 12.5;
@@ -471,14 +496,16 @@
                     const d = Math.abs(x - playerGridX) + Math.abs(z - playerGridZ);
                     if (d < bestDist) { bestDist = d; bestX = x; bestZ = z; }
                 }
-                playerGridX = bestX;
-                playerGridZ = bestZ;
-                playerWorldPos.x = playerGridX * CELL_SIZE;
-                playerWorldPos.z = playerGridZ * CELL_SIZE;
+                if (bestDist < Infinity) {
+                    playerGridX = bestX;
+                    playerGridZ = bestZ;
+                    playerWorldPos.x = playerGridX * CELL_SIZE;
+                    playerWorldPos.z = playerGridZ * CELL_SIZE;
+                }
             }
         }
 
-        function updatePlayer(dt){
+        function updatePlayer(dt) {
             if (gameOver) return;
             // Stamina
             if (isSprinting && stamina > 0 && (keys['KeyW'] || keys['ArrowUp'])) {
@@ -528,31 +555,33 @@
 
             playerGridX = Math.round(playerWorldPos.x / CELL_SIZE);
             playerGridZ = Math.round(playerWorldPos.z / CELL_SIZE);
+
+            // Сначала гарантируем область вокруг, потом принудительно ставим меши, потом фиксируем позицию
+            ensurePlayerArea(playerGridX, playerGridZ, 1);
+            if (isMoving) {
+                const dirX = Math.round(moveX), dirZ = Math.round(moveZ);
+                if (dirX !== 0 || dirZ !== 0) extendPathAhead(playerGridX, playerGridZ, dirX, dirZ);
+            }
+            // Принудительно обновляем видимые меши (удаляем дальние и добавляем новые, если ещё не)
+            updateVisibleMeshes();
             clampPlayerToNearestCorridor();
 
+            // Камера
             if (isMoving) headBobPhase += dt * (isSprinting ? 14 : 10);
             const bobY = isMoving ? Math.sin(headBobPhase) * 0.06 : 0;
             const bobX = isMoving ? Math.cos(headBobPhase * 2) * 0.03 : 0;
-            camera.position.set(playerWorldPos.x + bobX, 1.55 + bobY, playerWorldPos.z);
+            camera.position.set(playerWorldPos.x + bobX, 1.5 + bobY, playerWorldPos.z);
             camera.rotation.set(pitch, yaw, 0);
-
-            // Минимальная безопасная область (радиус 1, чтобы не убирать стены вокруг)
-            ensurePlayerArea(playerGridX, playerGridZ, 1);
-            const dirX = isMoving ? Math.round(moveX) : 0;
-            const dirZ = isMoving ? Math.round(moveZ) : 0;
-            if (dirX !== 0 || dirZ !== 0) extendPathAhead(playerGridX, playerGridZ, dirX, dirZ);
-            pruneDistantCells(playerGridX, playerGridZ, 28);
-            updateVisibleMeshes();
         }
 
         // ── LIGHTING ──
-        function setupLighting(){
+        function setupLighting() {
             scene.add(new THREE.AmbientLight(0x5c4a3a, 1.4));
             const fill = new THREE.PointLight(0x443820, 20, 25, 2);
             fill.position.set(0, 3, 0);
             scene.add(fill);
         }
-        function updateFlickeringLights(t){
+        function updateFlickeringLights(t) {
             for (const pl of pointLights) {
                 if (!pl.userData || pl.userData.baseIntensity === undefined) continue;
                 const p = pl.userData.flickerPhase || 0;
@@ -567,41 +596,100 @@
         let gameOver = false, gameStarted = false, mouseLocked = false;
         let yaw = 0, pitch = -0.05, headBobPhase = 0, time = 0;
         let monsterGridX = 0, monsterGridZ = -6, monsterSpeed = 6.2, monsterSurgeTimer = 0, monsterSurgeCooldown = 0;
-        function onKeyDown(e){ keys[e.code] = true; if(!gameStarted && !gameOver){ gameStarted = true; initAudio(); } if(gameOver && e.code === 'KeyR') restartGame(); }
-        function onKeyUp(e){ keys[e.code] = false; if(e.code === 'ShiftLeft') isSprinting = false; }
-        function onMouseMove(e){ if(!mouseLocked || gameOver) return; yaw -= e.movementX * 0.002; pitch -= e.movementY * 0.002; pitch = Math.max(-1.2, Math.min(0.5, pitch)); }
-        function onMouseDown(){ if(gameOver){ restartGame(); return; } if(!mouseLocked){ canvas.requestPointerLock(); initAudio(); if(!gameStarted){ gameStarted = true; } } }
-        function onPointerLockChange(){ mouseLocked = document.pointerLockElement === canvas; }
-        function onResize(){ renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); }
+        function onKeyDown(e) {
+            keys[e.code] = true;
+            if (!gameStarted && !gameOver) {
+                gameStarted = true;
+                initAudio();
+            }
+            if (gameOver && e.code === 'KeyR') restartGame();
+        }
+        function onKeyUp(e) { keys[e.code] = false; if (e.code === 'ShiftLeft') isSprinting = false; }
+        function onMouseMove(e) {
+            if (!mouseLocked || gameOver) return;
+            yaw -= e.movementX * 0.002;
+            pitch -= e.movementY * 0.002;
+            pitch = Math.max(-1.2, Math.min(0.5, pitch));
+        }
+        function onMouseDown() {
+            if (gameOver) { restartGame(); return; }
+            if (!mouseLocked) {
+                canvas.requestPointerLock();
+                initAudio();
+                if (!gameStarted) {
+                    gameStarted = true;
+                }
+            }
+        }
+        function onPointerLockChange() { mouseLocked = document.pointerLockElement === canvas; }
+        function onResize() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        }
         let touchStartX = 0, touchStartY = 0, touchActive = false;
-        function onTouchStart(e){ if(gameOver){ restartGame(); return; } initAudio(); if(!gameStarted){ gameStarted = true; } if(e.touches.length === 1){ touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; touchActive = true; keys['KeyW'] = true; } if(e.touches.length === 2) isSprinting = true; }
-        function onTouchMove(e){ if(!touchActive || gameOver) return; const dx = e.touches[0].clientX - touchStartX, dy = e.touches[0].clientY - touchStartY; yaw -= dx * 0.004; pitch -= dy * 0.004; pitch = Math.max(-1.2, Math.min(0.5, pitch)); touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
-        function onTouchEnd(){ touchActive = false; keys['KeyW'] = false; isSprinting = false; }
+        function onTouchStart(e) {
+            if (gameOver) { restartGame(); return; }
+            initAudio();
+            if (!gameStarted) { gameStarted = true; }
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                touchActive = true;
+                keys['KeyW'] = true;
+            }
+            if (e.touches.length === 2) isSprinting = true;
+        }
+        function onTouchMove(e) {
+            if (!touchActive || gameOver) return;
+            const dx = e.touches[0].clientX - touchStartX;
+            const dy = e.touches[0].clientY - touchStartY;
+            yaw -= dx * 0.004;
+            pitch -= dy * 0.004;
+            pitch = Math.max(-1.2, Math.min(0.5, pitch));
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }
+        function onTouchEnd() { touchActive = false; keys['KeyW'] = false; isSprinting = false; }
 
         // ── RESTART ──
-        function restartGame(){
-            gameOver = false; gameStarted = true;
-            pathCells.clear(); cellDataMap.clear();
-            for(const key of activeMeshes.keys()) removeCellMeshes(key);
-            pointLights.length = 0; activeMeshes.clear();
-            playerWorldPos.set(0, 1.55, 0); playerGridX = 0; playerGridZ = 0;
+        function restartGame() {
+            gameOver = false;
+            gameStarted = true;
+            // Очистка
+            for (const key of activeMeshes.keys()) {
+                removeCellMeshes(key);
+            }
+            pathCells.clear();
+            cellDataMap.clear();
+            pointLights.length = 0;
+            activeMeshes.clear();
+
+            playerWorldPos.set(0, 1.5, 0);
+            playerGridX = 0; playerGridZ = 0;
             stamina = 100; isSprinting = false;
-            monsterGridX = 0; monsterGridZ = -6; monsterSurgeTimer = 0; monsterSurgeCooldown = 4;
+            monsterGridX = 0; monsterGridZ = -6;
+            monsterSurgeTimer = 0; monsterSurgeCooldown = 4;
             yaw = 0; pitch = -0.05; headBobPhase = 0; time = 0;
-            // Начальный коридор: только прямая и безопасная зона радиусом 1
+
             ensurePlayerArea(0, 0, 1);
             extendPathAhead(0, 0, 0, -1);
             updateVisibleMeshes();
             monsterGroup.position.set(monsterGridX * CELL_SIZE, 0, monsterGridZ * CELL_SIZE);
-            camera.position.set(0, 1.55, 0); camera.rotation.set(pitch, yaw, 0);
-            jumpscareEl.classList.remove('active'); restartPrompt.classList.remove('visible');
-            hudEl.textContent = 'KEEP RUNNING'; hudEl.style.color = '#c8b87d'; staminaFill.style.width = '100%'; setHeartbeat(0);
+            camera.position.set(0, 1.5, 0);
+            camera.rotation.set(pitch, yaw, 0);
+            jumpscareEl.classList.remove('active');
+            restartPrompt.classList.remove('visible');
+            hudEl.textContent = 'KEEP RUNNING';
+            hudEl.style.color = '#c8b87d';
+            staminaFill.style.width = '100%';
+            setHeartbeat(0);
         }
 
-        // ── LOOP ──
+        // ── GAME LOOP ──
         const clock = new THREE.Clock();
         let lastPrune = 0;
-        function gameLoop(){
+        function gameLoop() {
             requestAnimationFrame(gameLoop);
             const dt = Math.min(clock.getDelta(), 0.15);
             time += dt;
@@ -612,7 +700,10 @@
                 updateMonsterAnimation(dt);
                 updateFlickeringLights(time);
                 lastPrune += dt;
-                if (lastPrune > 1.5) { lastPrune = 0; pruneDistantCells(playerGridX, playerGridZ, 28); }
+                if (lastPrune > 1.5) {
+                    lastPrune = 0;
+                    pruneDistantCells(playerGridX, playerGridZ, 28);
+                }
             }
             renderer.render(scene, camera);
             if (!gameOver && gameStarted) {
@@ -625,21 +716,17 @@
         }
 
         // ── INIT ──
-        function init(){
+        function init() {
             setupLighting();
             createMonster();
-            // Стартовая генерация – видимый узкий коридор
+            // Создаём начальный коридор и меши
             ensurePlayerArea(0, 0, 1);
             extendPathAhead(0, 0, 0, -1);
-            // Принудительно создаём меши для начальных клеток
-            for (const key of pathCells) {
-                const [x, z] = key.split(',').map(Number);
-                createCellMeshes(x, z);
-            }
             updateVisibleMeshes();
             monsterGroup.position.set(monsterGridX * CELL_SIZE, 0, monsterGridZ * CELL_SIZE);
-            playerWorldPos.set(0, 1.55, 0);
+            playerWorldPos.set(0, 1.5, 0);
             camera.position.copy(playerWorldPos);
+
             window.addEventListener('keydown', onKeyDown);
             window.addEventListener('keyup', onKeyUp);
             window.addEventListener('mousemove', onMouseMove);
