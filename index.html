@@ -88,7 +88,7 @@
   <script type="module">
     import * as THREE from 'three';
 
-    // ======================== DOM ЭЛЕМЕНТЫ ========================
+    // ======================== ДОМ-ЭЛЕМЕНТЫ ========================
     const canvas = document.getElementById('game');
     const vhsCanvas = document.getElementById('vhs-overlay');
     const ctxVhs = vhsCanvas.getContext('2d');
@@ -100,16 +100,16 @@
 
     // ======================== THREE.JS НАСТРОЙКА ========================
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // ограничение для производительности
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = false;
+    renderer.shadowMap.enabled = false; // БЕЗ ТЕНЕЙ
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.9;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#2a1a0c'); // чуть светлее, чтобы не сливалось с чёрным
-    scene.fog = new THREE.FogExp2('#2a1a0c', 0.0002);
+    scene.background = new THREE.Color('#1a1008');
+    scene.fog = new THREE.FogExp2('#1a1008', 0.00025);
 
     const camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.3, 60);
     camera.position.set(0, 1.7, 0);
@@ -121,7 +121,7 @@
       const c = document.createElement('canvas'); c.width = size; c.height = size;
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#d4b96a'; ctx.fillRect(0,0,size,size);
-      for(let i=0;i<400;i++){ ctx.fillStyle=`rgba(180,140,70,${Math.random()*0.08})`; ctx.fillRect(Math.random()*size,Math.random()*size,3+Math.random()*6,1+Math.random()*3);}
+      for(let i=0;i<500;i++){ ctx.fillStyle=`rgba(180,140,70,${Math.random()*0.1})`; ctx.fillRect(Math.random()*size,Math.random()*size,4+Math.random()*8,2+Math.random()*4);}
       return new THREE.CanvasTexture(c);
     }
     function createFloorTexture() {
@@ -129,7 +129,7 @@
       const c = document.createElement('canvas'); c.width = size; c.height = size;
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#6b5c48'; ctx.fillRect(0,0,size,size);
-      for(let i=0;i<1500;i++){ const b=70+Math.random()*40; ctx.fillStyle=`rgba(${b},${b*0.8},${b*0.5},0.06)`; ctx.fillRect(Math.random()*size,Math.random()*size,1.5,1.5);}
+      for(let i=0;i<2000;i++){ const b=70+Math.random()*45; ctx.fillStyle=`rgba(${b},${b*0.8},${b*0.5},0.07)`; ctx.fillRect(Math.random()*size,Math.random()*size,2,2);}
       return new THREE.CanvasTexture(c);
     }
     function createCeilingTexture() {
@@ -146,15 +146,15 @@
       const grad = ctx.createLinearGradient(0,0,size,size);
       grad.addColorStop(0,'#3d1a1a'); grad.addColorStop(0.5,'#4a2020'); grad.addColorStop(1,'#2d1010');
       ctx.fillStyle = grad; ctx.fillRect(0,0,size,size);
-      for(let i=0;i<600;i++){
-        const x=Math.random()*size,y=Math.random()*size,r=3+Math.random()*15;
+      for(let i=0;i<800;i++){
+        const x=Math.random()*size,y=Math.random()*size,r=3+Math.random()*18;
         const sg=ctx.createRadialGradient(x,y,0,x,y,r);
-        sg.addColorStop(0,`rgba(${30+Math.random()*50},${Math.random()*20},${Math.random()*15},0.4)`);
+        sg.addColorStop(0,`rgba(${30+Math.random()*55},${Math.random()*25},${Math.random()*20},0.45)`);
         sg.addColorStop(1,'rgba(0,0,0,0)');
         ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
       }
-      ctx.strokeStyle='rgba(80,20,20,0.3)'; ctx.lineWidth=0.5;
-      for(let i=0;i<150;i++){ctx.beginPath();let sx=Math.random()*size,sy=Math.random()*size;ctx.moveTo(sx,sy);for(let j=0;j<4;j++){sx+=(Math.random()-0.5)*50;sy+=(Math.random()-0.5)*50;ctx.lineTo(sx,sy);}ctx.stroke();}
+      ctx.strokeStyle='rgba(80,20,20,0.35)'; ctx.lineWidth=0.6;
+      for(let i=0;i<200;i++){ctx.beginPath();let sx=Math.random()*size,sy=Math.random()*size;ctx.moveTo(sx,sy);for(let j=0;j<5;j++){sx+=(Math.random()-0.5)*55;sy+=(Math.random()-0.5)*55;ctx.lineTo(sx,sy);}ctx.stroke();}
       return new THREE.CanvasTexture(c);
     }
 
@@ -171,237 +171,332 @@
     const matCeil = new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.8, metalness: 0.03, color: '#e8e2d4' });
     const matMonster = new THREE.MeshStandardMaterial({ map: monsterTex, roughness: 0.4, metalness: 0.05, color: '#cc9988' });
 
-    // ======================== ОСВЕЩЕНИЕ ========================
-    const ambientLight = new THREE.AmbientLight('#4a3a2a', 0.7);
+    // ======================== ОСВЕЩЕНИЕ (ТОЛЬКО ОДНА ЛАМПА) ========================
+    const ambientLight = new THREE.AmbientLight('#4a3a2a', 0.8); // чуть ярче, чтобы компенсировать отсутствие локальных ламп
     scene.add(ambientLight);
-    const overheadLight = new THREE.PointLight('#fffbe8', 30, 12, 2);
-    overheadLight.position.set(0, 2.8, 0);
-    scene.add(overheadLight);
+    const playerLight = new THREE.PointLight('#fffbe8', 35, 15, 2); // яркий, большой радиус
+    playerLight.position.set(0, 2.8, 0);
+    scene.add(playerLight);
 
-    // ======================== КОРИДОРЫ ========================
-    const CELL_SIZE = 4.0, WALL_HEIGHT = 3.0, WALL_THICK = 0.15;
-    const corridorCells = new Map();
+    // ======================== СИСТЕМА КОРИДОРОВ (оптимизированная) ========================
+    const CELL_SIZE = 4.0;
+    const WALL_HEIGHT = 3.0;
+    const WALL_THICK = 0.15;
+    const corridorCells = new Map(); // key "x,z" -> { group, floor, ceil, walls: {n,s,e,w} }
+
+    function createWallMesh(x, z, rotY) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICK), matWall);
+      mesh.position.set(x, WALL_HEIGHT/2, z);
+      mesh.rotation.y = rotY;
+      return mesh;
+    }
 
     function addCorridorCell(gx, gz) {
       const key = `${gx},${gz}`;
       if (corridorCells.has(key)) return;
+
       const group = new THREE.Group();
-      const wx = gx * CELL_SIZE, wz = gz * CELL_SIZE;
-      
-      // пол и потолок
+      const wx = gx * CELL_SIZE;
+      const wz = gz * CELL_SIZE;
+
+      // Пол
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE), matFloor);
-      floor.rotation.x = -Math.PI/2; floor.position.set(wx,0.01,wz); group.add(floor);
+      floor.rotation.x = -Math.PI/2;
+      floor.position.set(wx, 0.01, wz);
+      group.add(floor);
+
+      // Потолок
       const ceil = new THREE.Mesh(new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE), matCeil);
-      ceil.rotation.x = Math.PI/2; ceil.position.set(wx, WALL_HEIGHT, wz); group.add(ceil);
-      
-      const createWall = (x,z,rotY) => {
-        const w = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICK), matWall);
-        w.position.set(x, WALL_HEIGHT/2, z); w.rotation.y = rotY; return w;
-      };
+      ceil.rotation.x = Math.PI/2;
+      ceil.position.set(wx, WALL_HEIGHT, wz);
+      group.add(ceil);
+
+      // Стены (создаём все, потом удалим лишние)
       const walls = {
-        n: createWall(wx, wz - CELL_SIZE/2, 0),
-        s: createWall(wx, wz + CELL_SIZE/2, 0),
-        e: createWall(wx + CELL_SIZE/2, wz, Math.PI/2),
-        w: createWall(wx - CELL_SIZE/2, wz, Math.PI/2),
+        n: createWallMesh(wx, wz - CELL_SIZE/2, 0),
+        s: createWallMesh(wx, wz + CELL_SIZE/2, 0),
+        e: createWallMesh(wx + CELL_SIZE/2, wz, Math.PI/2),
+        w: createWallMesh(wx - CELL_SIZE/2, wz, Math.PI/2),
       };
       Object.values(walls).forEach(w => group.add(w));
-      scene.add(group);
-      corridorCells.set(key, {group, walls});
 
+      scene.add(group);
+      corridorCells.set(key, { group, walls });
+
+      // Удаляем стены, смежные с уже существующими соседями
       const neighbors = [
-        {dx:0,dz:-1, my:'n', their:'s'}, {dx:0,dz:1, my:'s', their:'n'},
-        {dx:1,dz:0, my:'e', their:'w'}, {dx:-1,dz:0, my:'w', their:'e'}
+        { dx: 0, dz: -1, my: 'n', their: 's' },
+        { dx: 0, dz: 1, my: 's', their: 'n' },
+        { dx: 1, dz: 0, my: 'e', their: 'w' },
+        { dx: -1, dz: 0, my: 'w', their: 'e' },
       ];
-      neighbors.forEach(({dx,dz,my,their}) => {
+      neighbors.forEach(({ dx, dz, my, their }) => {
         const nkey = `${gx+dx},${gz+dz}`;
         if (corridorCells.has(nkey)) {
-          const nb = corridorCells.get(nkey);
-          if (walls[my]) { group.remove(walls[my]); walls[my] = null; }
-          if (nb.walls[their]) { nb.group.remove(nb.walls[their]); nb.walls[their] = null; }
+          const neighbor = corridorCells.get(nkey);
+          // убираем свою стену
+          if (walls[my]) {
+            group.remove(walls[my]);
+            walls[my] = null;
+          }
+          // убираем стену соседа
+          if (neighbor.walls[their]) {
+            neighbor.group.remove(neighbor.walls[their]);
+            neighbor.walls[their] = null;
+          }
         }
       });
     }
 
-    function ensureArea(gx, gz, radius=7) {
-      for (let dx=-radius; dx<=radius; dx++)
-        for (let dz=-radius; dz<=radius; dz++)
-          if (Math.abs(dx)+Math.abs(dz)<=radius) addCorridorCell(gx+dx, gz+dz);
+    function ensureArea(gx, gz, radius = 8) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dz = -radius; dz <= radius; dz++) {
+          if (Math.abs(dx) + Math.abs(dz) > radius) continue;
+          addCorridorCell(gx + dx, gz + dz);
+        }
+      }
     }
 
-    function cleanupFarCells(cx, cz, keep=9) {
-      const del = [];
-      corridorCells.forEach((_,key)=>{
-        const [x,z]=key.split(',').map(Number);
-        if(Math.abs(x-cx)+Math.abs(z-cz)>keep) del.push(key);
+    function cleanupFarCells(cx, cz, keep = 10) {
+      const toDelete = [];
+      corridorCells.forEach((cell, key) => {
+        const [x, z] = key.split(',').map(Number);
+        if (Math.abs(x - cx) + Math.abs(z - cz) > keep) {
+          toDelete.push(key);
+        }
       });
-      del.forEach(key=>{
-        const c=corridorCells.get(key); scene.remove(c.group); corridorCells.delete(key);
+      toDelete.forEach(key => {
+        const cell = corridorCells.get(key);
+        scene.remove(cell.group);
+        corridorCells.delete(key);
       });
     }
 
     // ======================== МОНСТР ========================
     let monsterGroup;
-    const monsterPos = new THREE.Vector3(0,0,-16);
+    const monsterPos = new THREE.Vector3(0, 0, -16);
 
     function createMonster() {
       monsterGroup = new THREE.Group();
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.4,1.4,8), matMonster);
-      torso.position.y=1.5; monsterGroup.add(torso);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.35,8,6), matMonster);
-      head.position.y=2.4; monsterGroup.add(head);
-      for(let side=-1;side<=1;side+=2){
-        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.12,1.1,6), matMonster);
-        arm.position.set(side*0.5,1.8,0); arm.rotation.z=side*0.4; monsterGroup.add(arm);
-        const hand = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,0.5,6), matMonster);
-        hand.position.set(side*0.65,1.2,0.2); hand.rotation.z=side*0.7; monsterGroup.add(hand);
+      
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 1.4, 8), matMonster);
+      torso.position.y = 1.5; monsterGroup.add(torso);
+      
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), matMonster);
+      head.position.y = 2.4; monsterGroup.add(head);
+      
+      for (let side = -1; side <= 1; side += 2) {
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.1, 6), matMonster);
+        arm.position.set(side * 0.5, 1.8, 0); arm.rotation.z = side * 0.4; monsterGroup.add(arm);
+        const hand = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6), matMonster);
+        hand.position.set(side * 0.65, 1.2, 0.2); hand.rotation.z = side * 0.7; monsterGroup.add(hand);
       }
-      for(let side=-1;side<=1;side+=2){
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.14,0.9,6), matMonster);
-        leg.position.set(side*0.2,0.8,0); monsterGroup.add(leg);
+      for (let side = -1; side <= 1; side += 2) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.9, 6), matMonster);
+        leg.position.set(side * 0.2, 0.8, 0); monsterGroup.add(leg);
       }
-      // СВЕТ МОНСТРА – НОВЫЙ КАЖДЫЙ РАЗ!
-      const glow = new THREE.PointLight('#441111', 2, 6, 2);
-      glow.position.set(0,1.6,0);
-      monsterGroup.add(glow);
+      
       monsterGroup.position.copy(monsterPos);
       scene.add(monsterGroup);
-      return glow; // возвращаем для управления яркостью
     }
-    let monsterGlowRef = null;
 
     // ======================== ИГРОК ========================
     const player = {
-      pos: new THREE.Vector3(0,1.7,0),
-      yaw:0, pitch:0, stamina:100, sprint:false,
-      speed:3.2, dist:0, lastPos: new THREE.Vector3(0,1.7,0)
+      pos: new THREE.Vector3(0, 1.7, 0),
+      yaw: 0, pitch: 0,
+      stamina: 100,
+      sprint: false,
+      speed: 3.2,
+      dist: 0,
+      lastPos: new THREE.Vector3(0, 1.7, 0),
     };
 
     // ======================== СОСТОЯНИЯ ИГРЫ ========================
-    let gameStarted = false, gameOver = false, deathTimer = null;
+    let gameStarted = false;
+    let gameOver = false;
+    let deathTimer = null;
 
     function resetGame() {
-      gameStarted = false; gameOver = false;
-      if(deathTimer) clearTimeout(deathTimer);
-      if(monsterGroup){ scene.remove(monsterGroup); monsterGroup=null; monsterGlowRef=null; }
-      corridorCells.forEach(c=>scene.remove(c.group)); corridorCells.clear();
-      player.pos.set(0,1.7,0); player.yaw=0; player.pitch=0;
-      player.stamina=100; player.dist=0; player.lastPos.copy(player.pos);
-      msgBox.classList.remove('show'); msgText.textContent=''; instrText.style.opacity='0';
-      distanceEl.textContent='ДИСТАНЦИЯ: 0м';
-      ensureArea(0,0,5);
-      monsterPos.set(0,0,-16);
-      monsterGlowRef = createMonster();
-      instrText.innerHTML='КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
-      instrText.style.opacity='1';
+      gameStarted = false;
+      gameOver = false;
+      if (deathTimer) clearTimeout(deathTimer);
+      if (monsterGroup) { scene.remove(monsterGroup); monsterGroup = null; }
+      corridorCells.forEach(c => scene.remove(c.group));
+      corridorCells.clear();
+      player.pos.set(0, 1.7, 0);
+      player.yaw = 0; player.pitch = 0;
+      player.stamina = 100; player.dist = 0;
+      player.lastPos.copy(player.pos);
+      msgBox.classList.remove('show');
+      msgText.textContent = '';
+      instrText.style.opacity = '0';
+      distanceEl.textContent = 'ДИСТАНЦИЯ: 0м';
+      ensureArea(0, 0, 6);
+      monsterPos.set(0, 0, -16);
+      createMonster();
+      instrText.innerHTML = 'КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
+      instrText.style.opacity = '1';
       msgBox.classList.add('show');
     }
 
     function startGame() {
-      if(gameStarted||gameOver) return;
-      gameStarted=true; gameOver=false;
-      msgBox.classList.remove('show'); instrText.style.opacity='0';
-      player.pos.set(0,1.7,0); player.lastPos.copy(player.pos);
-      player.yaw=0; player.pitch=0; player.stamina=100; player.dist=0;
-      monsterPos.set(0,0,-16);
-      if(monsterGroup) monsterGroup.position.copy(monsterPos);
+      if (gameStarted || gameOver) return;
+      gameStarted = true;
+      gameOver = false;
+      msgBox.classList.remove('show');
+      instrText.style.opacity = '0';
+      player.pos.set(0, 1.7, 0);
+      player.lastPos.copy(player.pos);
+      player.yaw = 0; player.pitch = 0;
+      player.stamina = 100; player.dist = 0;
+      monsterPos.set(0, 0, -16);
+      if (monsterGroup) monsterGroup.position.copy(monsterPos);
       canvas.requestPointerLock();
     }
 
     function endGame() {
-      if(!gameStarted||gameOver) return;
-      gameOver=true; gameStarted=false;
+      if (!gameStarted || gameOver) return;
+      gameOver = true;
+      gameStarted = false;
       document.exitPointerLock();
-      msgText.textContent='ОН ДОГНАЛ'; msgBox.classList.add('show');
-      instrText.style.opacity='0';
-      if(deathTimer) clearTimeout(deathTimer);
-      deathTimer = setTimeout(()=>{
-        msgText.textContent='';
-        instrText.innerHTML='КЛИКНИТЕ, ЧТОБЫ ПОПРОБОВАТЬ СНОВА<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР';
-        instrText.style.opacity='1';
+      msgText.textContent = 'ОН ДОГНАЛ';
+      msgBox.classList.add('show');
+      instrText.style.opacity = '0';
+      if (deathTimer) clearTimeout(deathTimer);
+      deathTimer = setTimeout(() => {
+        msgText.textContent = '';
+        instrText.innerHTML = 'КЛИКНИТЕ, ЧТОБЫ ПОПРОБОВАТЬ СНОВА<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР';
+        instrText.style.opacity = '1';
       }, 2500);
     }
 
     // ======================== УПРАВЛЕНИЕ ========================
     const keys = {};
-    window.addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; if(e.key==='Shift') player.sprint=true; });
-    window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; if(e.key==='Shift') player.sprint=false; });
-    let mouseDX=0, mouseDY=0;
-    document.addEventListener('mousemove',e=>{ if(document.pointerLockElement===canvas){ mouseDX+=e.movementX; mouseDY+=e.movementY; } });
-    canvas.addEventListener('click',()=>{
-      if(!gameStarted && !gameOver) startGame();
-      else if(gameOver) resetGame();
+    window.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key === 'Shift') player.sprint = true;
+    });
+    window.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+      if (e.key === 'Shift') player.sprint = false;
+    });
+    let mouseDX = 0, mouseDY = 0;
+    document.addEventListener('mousemove', e => {
+      if (document.pointerLockElement === canvas) {
+        mouseDX += e.movementX;
+        mouseDY += e.movementY;
+      }
+    });
+    canvas.addEventListener('click', () => {
+      if (!gameStarted && !gameOver) startGame();
+      else if (gameOver) resetGame();
       else canvas.requestPointerLock();
     });
 
     // ======================== VHS (БЫСТРЫЙ) ========================
-    const noiseCanvas = document.createElement('canvas'); noiseCanvas.width=128; noiseCanvas.height=128;
+    const noiseCanvas = document.createElement('canvas');
+    noiseCanvas.width = 128; noiseCanvas.height = 128;
     const nctx = noiseCanvas.getContext('2d');
-    const noiseData = nctx.createImageData(128,128);
-    for(let i=0;i<noiseData.data.length;i+=4){ const v=Math.random()*20; noiseData.data[i]=v; noiseData.data[i+1]=v; noiseData.data[i+2]=v; noiseData.data[i+3]=15; }
-    nctx.putImageData(noiseData,0,0);
+    const noiseData = nctx.createImageData(128, 128);
+    for (let i = 0; i < noiseData.data.length; i += 4) {
+      const v = Math.random() * 25;
+      noiseData.data[i] = v;
+      noiseData.data[i + 1] = v;
+      noiseData.data[i + 2] = v;
+      noiseData.data[i + 3] = 20;
+    }
+    nctx.putImageData(noiseData, 0, 0);
     let vhsGlitch = 0;
 
-    function updateVHS(){
-      vhsCanvas.width=window.innerWidth; vhsCanvas.height=window.innerHeight;
-      const ctx=vhsCanvas; ctx.clearRect(0,0,vhsCanvas.width,vhsCanvas.height);
-      ctx.globalAlpha=0.06+vhsGlitch*0.1;
-      for(let y=0;y<vhsCanvas.height;y+=128) for(let x=0;x<vhsCanvas.width;x+=128) ctx.drawImage(noiseCanvas,x,y);
-      if(vhsGlitch>0.1){
-        ctx.globalAlpha=vhsGlitch*0.5; ctx.fillStyle='#ffffff';
-        for(let i=0;i<vhsGlitch*10;i++){ const y=Math.random()*vhsCanvas.height; ctx.fillRect(0,y,vhsCanvas.width,2+Math.random()*6); }
+    function updateVHS() {
+      vhsCanvas.width = window.innerWidth;
+      vhsCanvas.height = window.innerHeight;
+      const ctx = vhsCanvas;
+      ctx.clearRect(0, 0, vhsCanvas.width, vhsCanvas.height);
+      ctx.globalAlpha = 0.07 + vhsGlitch * 0.12;
+      for (let y = 0; y < vhsCanvas.height; y += 128) {
+        for (let x = 0; x < vhsCanvas.width; x += 128) {
+          ctx.drawImage(noiseCanvas, x, y);
+        }
       }
-      ctx.globalAlpha=1;
+      if (vhsGlitch > 0.15) {
+        ctx.globalAlpha = vhsGlitch * 0.55;
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < vhsGlitch * 12; i++) {
+          const y = Math.random() * vhsCanvas.height;
+          ctx.fillRect(0, y, vhsCanvas.width, 1 + Math.random() * 5);
+        }
+      }
+      ctx.globalAlpha = 1;
     }
 
-    // ======================== ЗВУК (простой) ========================
-    let audioCtx=null;
-    function initAudio(){
-      if(audioCtx) return;
-      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-      const master = audioCtx.createGain(); master.gain.value=0.2; master.connect(audioCtx.destination);
-      const buzz = audioCtx.createOscillator(); buzz.type='sawtooth'; buzz.frequency.value=58;
-      const buzzGain = audioCtx.createGain(); buzzGain.gain.value=0.06; buzz.connect(buzzGain); buzzGain.connect(master);
+    // ======================== ЗВУК ========================
+    let audioCtx = null;
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const master = audioCtx.createGain();
+      master.gain.value = 0.25;
+      master.connect(audioCtx.destination);
+      
+      const buzz = audioCtx.createOscillator();
+      buzz.type = 'sawtooth';
+      buzz.frequency.value = 55;
+      const buzzGain = audioCtx.createGain();
+      buzzGain.gain.value = 0.07;
+      buzz.connect(buzzGain);
+      buzzGain.connect(master);
       buzz.start();
-      const noiseBuf = audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
-      const data = noiseBuf.getChannelData(0);
-      for(let i=0;i<data.length;i++) data[i]=(Math.random()-0.5)*0.05;
-      const noise = audioCtx.createBufferSource(); noise.buffer=noiseBuf; noise.loop=true;
-      const noiseGain = audioCtx.createGain(); noiseGain.gain.value=0.04; noise.connect(noiseGain); noiseGain.connect(master);
+      
+      const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() - 0.5) * 0.06;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      noise.loop = true;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.value = 0.05;
+      noise.connect(noiseGain);
+      noiseGain.connect(master);
       noise.start();
     }
 
-    // ======================== ИГРОВОЙ ЦИКЛ ========================
-    let lastCell = {x:0,z:0};
+    // ======================== ГЛАВНЫЙ ЦИКЛ ========================
+    let lastCell = { x: 0, z: 0 };
 
-    function update(dt){
-      if(!gameStarted||gameOver){ updateVHS(); return; }
-      const clampedDt = Math.min(dt, 0.1);
-      
-      // поворот
-      player.yaw -= mouseDX*0.002; player.pitch -= mouseDY*0.002;
-      player.pitch = Math.max(-1.4, Math.min(1.4, player.pitch));
-      mouseDX=0; mouseDY=0;
-      
-      // стамина и скорость
-      if(player.sprint && (keys['w']||keys['arrowup']) && player.stamina>0){
-        player.stamina -= 18*clampedDt;
-        if(player.stamina<0) player.stamina=0;
-      } else {
-        player.stamina = Math.min(100, player.stamina+15*clampedDt);
+    function update(delta) {
+      if (!gameStarted || gameOver) {
+        updateVHS();
+        return;
       }
-      const canSprint = player.sprint && player.stamina>0 && (keys['w']||keys['arrowup']);
+      const dt = Math.min(delta, 0.1);
+      
+      // Поворот
+      player.yaw -= mouseDX * 0.002;
+      player.pitch -= mouseDY * 0.002;
+      player.pitch = Math.max(-1.4, Math.min(1.4, player.pitch));
+      mouseDX = 0; mouseDY = 0;
+      
+      // Стамина
+      if (player.sprint && (keys['w'] || keys['arrowup']) && player.stamina > 0) {
+        player.stamina -= 18 * dt;
+        if (player.stamina < 0) player.stamina = 0;
+      } else {
+        player.stamina = Math.min(100, player.stamina + 15 * dt);
+      }
+      const canSprint = player.sprint && player.stamina > 0 && (keys['w'] || keys['arrowup']);
       player.speed = canSprint ? 5.8 : 3.2;
       
-      // движение
-      const forward = new THREE.Vector3(-Math.sin(player.yaw),0,-Math.cos(player.yaw));
-      const right = new THREE.Vector3(Math.cos(player.yaw),0,-Math.sin(player.yaw));
+      // Движение
+      const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+      const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
       const move = new THREE.Vector3();
-      if(keys['w']||keys['arrowup']) move.add(forward);
-      if(keys['s']||keys['arrowdown']) move.sub(forward);
-      if(keys['a']||keys['arrowleft']) move.sub(right);
-      if(keys['d']||keys['arrowright']) move.add(right);
-      if(move.length()>1) move.normalize();
-      player.pos.add(move.multiplyScalar(player.speed*clampedDt));
+      if (keys['w'] || keys['arrowup']) move.add(forward);
+      if (keys['s'] || keys['arrowdown']) move.sub(forward);
+      if (keys['a'] || keys['arrowleft']) move.sub(right);
+      if (keys['d'] || keys['arrowright']) move.add(right);
+      if (move.length() > 1) move.normalize();
+      player.pos.add(move.multiplyScalar(player.speed * dt));
       player.pos.y = 1.7;
       
       player.dist += player.pos.distanceTo(player.lastPos);
@@ -412,69 +507,75 @@
       camera.rotation.y = player.yaw;
       camera.rotation.x = player.pitch;
       
-      // генерация коридоров
-      const gx = Math.round(player.pos.x/CELL_SIZE);
-      const gz = Math.round(player.pos.z/CELL_SIZE);
-      if(gx!==lastCell.x || gz!==lastCell.z){
-        ensureArea(gx,gz,8);
-        cleanupFarCells(gx,gz,10);
-        lastCell = {x:gx,z:gz};
+      // Генерация клеток
+      const gx = Math.round(player.pos.x / CELL_SIZE);
+      const gz = Math.round(player.pos.z / CELL_SIZE);
+      if (gx !== lastCell.x || gz !== lastCell.z) {
+        ensureArea(gx, gz, 8);
+        cleanupFarCells(gx, gz, 11);
+        lastCell = { x: gx, z: gz };
       }
       
-      overheadLight.position.set(player.pos.x, player.pos.y+1.1, player.pos.z);
+      // Свет за игроком
+      playerLight.position.set(player.pos.x, player.pos.y + 1.1, player.pos.z);
       
-      // монстр
-      if(!monsterGroup) return;
-      const lookDir = new THREE.Vector3(-Math.sin(player.yaw),0,-Math.cos(player.yaw));
+      // Монстр
+      if (!monsterGroup) return;
+      const lookDir = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
       const toMonster = monsterPos.clone().sub(player.pos);
       const dist = toMonster.length();
       const playerLooks = toMonster.normalize().dot(lookDir) > 0.4 && dist < 20;
       
       const monsterSpeed = playerLooks ? 2.0 : 4.5;
-      if(dist>0.7){
+      if (dist > 0.7) {
         const dir = toMonster.clone().normalize();
-        monsterPos.add(dir.multiplyScalar(Math.min(monsterSpeed*clampedDt, dist-0.7)));
+        monsterPos.add(dir.multiplyScalar(Math.min(monsterSpeed * dt, dist - 0.7)));
         monsterGroup.position.copy(monsterPos);
-        monsterGroup.lookAt(player.pos.x,1.5,player.pos.z);
+        monsterGroup.lookAt(player.pos.x, 1.5, player.pos.z);
       }
       
-      vhsGlitch = Math.max(0, (7-dist)/7)*0.6;
-      if(dist<3) vhsGlitch=0.9;
-      if(monsterGlowRef) monsterGlowRef.intensity = 1.5 + Math.max(0,(10-dist))*1.2;
+      // VHS глитч
+      vhsGlitch = Math.max(0, (7 - dist) / 7) * 0.7;
+      if (dist < 3) vhsGlitch = 0.95;
       
-      if(dist<0.8) endGame();
+      if (dist < 0.8) endGame();
       
-      staminaFill.style.width = player.stamina+'%';
-      staminaFill.style.background = player.stamina<30 ? '#ff3333' : player.stamina<60 ? 'linear-gradient(90deg,#ff4444,#ffaa44)' : 'linear-gradient(90deg,#ff4444,#ffaa44,#44ff44)';
+      staminaFill.style.width = player.stamina + '%';
+      if (player.stamina < 30) staminaFill.style.background = '#ff3333';
+      else if (player.stamina < 60) staminaFill.style.background = 'linear-gradient(90deg, #ff4444, #ffaa44)';
+      else staminaFill.style.background = 'linear-gradient(90deg, #ff4444, #ffaa44, #44ff44)';
+      
       updateVHS();
     }
 
-    function render(){ renderer.render(scene, camera); }
+    function render() {
+      renderer.render(scene, camera);
+    }
 
-    function gameLoop(){
+    function gameLoop() {
       requestAnimationFrame(gameLoop);
       update(0.016);
       render();
     }
 
     // ======================== СТАРТ ========================
-    window.addEventListener('resize',()=>{
+    window.addEventListener('resize', () => {
       renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
     });
 
-    // начальная сцена
-    ensureArea(0,0,5);
-    monsterPos.set(0,0,-16);
-    monsterGlowRef = createMonster();
-    instrText.innerHTML='КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
-    instrText.style.opacity='1';
+    // Начальная сцена
+    ensureArea(0, 0, 6);
+    monsterPos.set(0, 0, -16);
+    createMonster();
+    instrText.innerHTML = 'КЛИКНИТЕ, ЧТОБЫ НАЧАТЬ<br>WASD – ДВИЖЕНИЕ | SHIFT – БЕГ<br>МЫШЬ – ОБЗОР | ОГЛЯНИТЕСЬ, ЧТОБЫ ЗАМЕДЛИТЬ ЕГО';
+    instrText.style.opacity = '1';
     msgBox.classList.add('show');
     gameLoop();
-    canvas.addEventListener('click', initAudio, {once:true});
 
-    console.log('✅ BACKROOMS – БЕГИ: готово. Кликните для старта.');
+    canvas.addEventListener('click', initAudio, { once: true });
+    console.log('✅ Игра готова. Кликните для старта.');
   </script>
 </body>
 </html>
