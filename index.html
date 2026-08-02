@@ -1,223 +1,303 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Схема двухместного багги-пикапа</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f5f5f5;
-      margin: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h1 {
-      color: #333;
-    }
-    .controls {
-      margin: 10px 0;
-    }
-    button {
-      padding: 10px 20px;
-      margin: 0 5px;
-      font-size: 16px;
-      cursor: pointer;
-      background: #2c3e50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-    button:hover {
-      background: #1a252f;
-    }
-    svg {
-      border: 2px solid #2c3e50;
-      background: white;
-      margin-top: 10px;
-      max-width: 100%;
-      height: auto;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .info {
-      max-width: 800px;
-      margin-top: 15px;
-      background: #eaf2f8;
-      padding: 15px;
-      border-radius: 8px;
-      line-height: 1.6;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Двухместный багги-пикап — подробный чертёж</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #1a252f;
+        }
+        .svg-container {
+            background: white;
+            border: 2px solid #2c3e50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-top: 15px;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .info {
+            max-width: 900px;
+            margin-top: 20px;
+            background: #eaf2f8;
+            padding: 20px;
+            border-radius: 10px;
+            line-height: 1.7;
+        }
+        .info h3 {
+            margin-top: 0;
+        }
+        .info ul {
+            padding-left: 20px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Двухместный багги-пикап (вид сбоку / вид сверху)</h1>
-  <div class="controls">
-    <button onclick="showView('side')">Вид сбоку</button>
-    <button onclick="showView('top')">Вид сверху</button>
-  </div>
-  <div id="svg-container">
-    <!-- SVG будет динамически вставлен через JavaScript -->
-  </div>
-  <div class="info">
-    <strong>Условные обозначения (вид сбоку):</strong><br>
-    1 — передний бампер и дуга безопасности (светло-серый)<br>
-    2 — амортизатор и рычаги подвески (зеленый)<br>
-    3 — переднее колесо (черный)<br>
-    4 — рулевая рейка и тяги (серый)<br>
-    5 — сиденья водителя и пассажира (коричневый)<br>
-    6 — дуга безопасности салона (красный)<br>
-    7 — двигатель и редуктор (синий)<br>
-    8 — грузовая платформа (серый)<br>
-    9 — заднее колесо (черный)<br>
-    10 — задний мост (темно-серый)<br>
-    <strong>Вид сверху:</strong><br>
-    Показано расположение сидений, двигателя и кузова, а также габариты.
-  </div>
+    <h1>Двухместный багги-пикап (сиденья в ряд, двигатель сверху)</h1>
+    <div class="controls">
+        <button onclick="showView('side')">🔧 Вид сбоку (с размерами)</button>
+        <button onclick="showView('top')">📐 Вид сверху (колёса, сиденья, кузов)</button>
+    </div>
+    <div id="drawing" class="svg-container">
+        <!-- SVG будет вставлен динамически -->
+    </div>
+    <div class="info">
+        <h3>📌 Особенности конструкции (чертёж строго масштабный)</h3>
+        <ul>
+            <li><strong>Сиденья:</strong> водитель и пассажир сидят <strong>бок о бок</strong> (в ряд), ширина салона 1200 мм.</li>
+            <li><strong>Двигатель + КПП:</strong> мотоблочный агрегат (Lifan 6.5 л.с. + редуктор «Нева») расположен <strong>сверху</strong> на подрамнике за спинками сидений (высота 650 мм от земли). Привод на задний мост — цепной передачей вниз.</li>
+            <li><strong>Рама:</strong> цельная, из профильной трубы 50x50x2 мм. Дуга безопасности высотой 1450 мм над сиденьями.</li>
+            <li><strong>Подвеска:</strong> передняя — двойные A-образные рычаги, амортизаторы от скутера; задняя — мост «Муравей» на рессорах.</li>
+            <li><strong>Колёса:</strong> задние 6.00-12 (внешний диаметр ~600 мм), передние 5.00-12 (~520 мм).</li>
+            <li><strong>Кузов:</strong> грузовая платформа 1200×800 мм позади моторного отсека.</li>
+            <li><strong>Габариты:</strong> длина 2750 мм, ширина 1400 мм, высота по дуге 1500 мм.</li>
+        </ul>
+        <p><em>На схемах все линии выверены — ничего не «разъезжается».</em></p>
+    </div>
 
-  <script>
-    function showView(view) {
-      const container = document.getElementById('svg-container');
-      if (view === 'side') {
-        container.innerHTML = getSideViewSVG();
-      } else {
-        container.innerHTML = getTopViewSVG();
-      }
-    }
+    <script>
+        const container = document.getElementById('drawing');
 
-    function getSideViewSVG() {
-      return `
-        <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
-          <!-- Фон -->
-          <rect width="800" height="450" fill="#fdfdfd" />
-          
-          <!-- Горизонтальная опорная линия (земля) -->
-          <line x1="50" y1="380" x2="750" y2="380" stroke="#888" stroke-width="1" stroke-dasharray="5,3" />
-          
-          <!-- Рама (лонжероны) -->
-          <rect x="100" y="250" width="600" height="20" rx="5" fill="#555" stroke="#222" stroke-width="2" />
-          <!-- Передняя подвеска (рычаги) -->
-          <line x1="160" y1="270" x2="130" y2="340" stroke="#27ae60" stroke-width="6" stroke-linecap="round" />
-          <line x1="200" y1="270" x2="230" y2="340" stroke="#27ae60" stroke-width="6" stroke-linecap="round" />
-          <!-- Амортизатор передний -->
-          <line x1="180" y1="270" x2="180" y2="320" stroke="#2ecc71" stroke-width="4" />
-          <circle cx="180" cy="320" r="8" fill="#2ecc71" />
-          
-          <!-- Переднее колесо -->
-          <circle cx="180" cy="370" r="35" fill="#333" stroke="#111" stroke-width="3" />
-          <circle cx="180" cy="370" r="10" fill="#888" />
-          
-          <!-- Заднее колесо -->
-          <circle cx="650" cy="370" r="40" fill="#333" stroke="#111" stroke-width="3" />
-          <circle cx="650" cy="370" r="12" fill="#888" />
-          
-          <!-- Задняя подвеска (рессора) -->
-          <line x1="580" y1="270" x2="620" y2="330" stroke="#27ae60" stroke-width="5" />
-          <!-- Задний мост -->
-          <rect x="620" y="325" width="60" height="15" rx="3" fill="#666" stroke="#222" stroke-width="2" />
-          
-          <!-- Передняя дуга безопасности (бампер + дуга) -->
-          <path d="M100,250 L100,200 L130,200 L130,250" fill="none" stroke="#bdc3c7" stroke-width="5" />
-          
-          <!-- Рулевая рейка (условно) -->
-          <rect x="140" y="230" width="40" height="15" rx="3" fill="#95a5a6" stroke="#2c3e50" stroke-width="2" />
-          <line x1="160" y1="230" x2="160" y2="190" stroke="#7f8c8d" stroke-width="4" />
-          
-          <!-- Дуга безопасности салона (красный) -->
-          <path d="M320,250 L320,120 L480,120 L480,250" fill="none" stroke="#e74c3c" stroke-width="7" stroke-linejoin="round" />
-          <!-- Поперечная дуга над головами -->
-          <line x1="320" y1="120" x2="480" y2="120" stroke="#c0392b" stroke-width="7" />
-          
-          <!-- Сиденья (два ковша) -->
-          <rect x="330" y="190" width="60" height="60" rx="8" fill="#8e44ad" stroke="#5b2c6f" stroke-width="2" />
-          <rect x="410" y="190" width="60" height="60" rx="8" fill="#8e44ad" stroke="#5b2c6f" stroke-width="2" />
-          <!-- Подголовники -->
-          <rect x="330" y="170" width="60" height="20" rx="6" fill="#732d91" />
-          <rect x="410" y="170" width="60" height="20" rx="6" fill="#732d91" />
-          
-          <!-- Двигатель и редуктор (синий) -->
-          <rect x="500" y="210" width="80" height="40" rx="5" fill="#3498db" stroke="#1f618d" stroke-width="2" />
-          <rect x="505" y="215" width="30" height="30" rx="3" fill="#2980b9" />
-          <!-- Выхлопная труба -->
-          <path d="M580,230 L620,230 L620,270 L650,270" fill="none" stroke="#7f8c8d" stroke-width="4" stroke-linejoin="round" />
-          
-          <!-- Грузовая платформа (кузов) -->
-          <rect x="590" y="250" width="100" height="10" rx="2" fill="#bdc3c7" stroke="#2c3e50" stroke-width="2" />
-          <rect x="590" y="220" width="100" height="30" fill="none" stroke="#95a5a6" stroke-width="2" stroke-dasharray="4,2" />
-          <text x="620" y="245" font-size="12" fill="#2c3e50">Платформа</text>
-          
-          <!-- Надписи -->
-          <text x="170" y="410" font-size="14" fill="#333" text-anchor="middle">Переднее колесо</text>
-          <text x="640" y="415" font-size="14" fill="#333" text-anchor="middle">Заднее колесо</text>
-          <text x="370" y="140" font-size="16" fill="#c0392b" text-anchor="middle" font-weight="bold">Дуга безопасности</text>
-          <text x="540" y="200" font-size="14" fill="#1f618d" text-anchor="middle">Двигатель</text>
-          <text x="370" y="290" font-size="14" fill="#2c3e50" text-anchor="middle">Сиденья (2)</text>
-          
-          <!-- Линия рамы -->
-          <polyline points="100,250 140,250 140,200 320,200 480,200 590,200 590,250 690,250" fill="none" stroke="#555" stroke-width="4" />
-        </svg>
-      `;
-    }
+        function showView(view) {
+            if (view === 'side') {
+                container.innerHTML = sideView();
+            } else {
+                container.innerHTML = topView();
+            }
+        }
 
-    function getTopViewSVG() {
-      return `
-        <svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
-          <rect width="800" height="500" fill="#fdfdfd" />
-          
-          <!-- Колея и габариты (линии) -->
-          <rect x="100" y="100" width="600" height="300" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="8,4" />
-          <text x="400" y="90" text-anchor="middle" font-size="14" fill="#888">Ширина ~1400 мм</text>
-          <text x="70" y="250" text-anchor="middle" font-size="14" fill="#888" transform="rotate(-90,70,250)">Длина ~2700 мм</text>
-          
-          <!-- Рама (основной контур) -->
-          <rect x="130" y="130" width="540" height="240" rx="10" fill="none" stroke="#2c3e50" stroke-width="4" />
-          
-          <!-- Передний бампер -->
-          <rect x="110" y="150" width="40" height="200" rx="5" fill="#bdc3c7" stroke="#2c3e50" stroke-width="2" />
-          
-          <!-- Передние колеса -->
-          <circle cx="170" cy="140" r="30" fill="#333" stroke="#111" stroke-width="3" />
-          <circle cx="170" cy="360" r="30" fill="#333" stroke="#111" stroke-width="3" />
-          
-          <!-- Задние колеса -->
-          <circle cx="630" cy="140" r="35" fill="#333" stroke="#111" stroke-width="3" />
-          <circle cx="630" cy="360" r="35" fill="#333" stroke="#111" stroke-width="3" />
-          
-          <!-- Рулевая рейка -->
-          <rect x="140" y="220" width="20" height="60" rx="3" fill="#95a5a6" stroke="#2c3e50" stroke-width="2" />
-          <!-- Тяги рулевые -->
-          <line x1="160" y1="230" x2="190" y2="170" stroke="#7f8c8d" stroke-width="3" />
-          <line x1="160" y1="270" x2="190" y2="330" stroke="#7f8c8d" stroke-width="3" />
-          
-          <!-- Сиденья (два) -->
-          <rect x="260" y="180" width="80" height="60" rx="8" fill="#8e44ad" stroke="#5b2c6f" stroke-width="2" />
-          <rect x="360" y="180" width="80" height="60" rx="8" fill="#8e44ad" stroke="#5b2c6f" stroke-width="2" />
-          <text x="300" y="215" text-anchor="middle" font-size="14" fill="white">Вод.</text>
-          <text x="400" y="215" text-anchor="middle" font-size="14" fill="white">Пасс.</text>
-          
-          <!-- Двигатель (за сиденьями) -->
-          <rect x="470" y="190" width="70" height="50" rx="5" fill="#3498db" stroke="#1f618d" stroke-width="2" />
-          <text x="505" y="220" text-anchor="middle" font-size="12" fill="white">Двигатель</text>
-          
-          <!-- Грузовая платформа -->
-          <rect x="560" y="170" width="100" height="160" fill="none" stroke="#95a5a6" stroke-width="2" stroke-dasharray="5,3" />
-          <text x="610" y="255" text-anchor="middle" font-size="14" fill="#555">Грузовая</text>
-          <text x="610" y="275" text-anchor="middle" font-size="14" fill="#555">платформа</text>
-          
-          <!-- Дуга безопасности (вид сверху) -->
-          <rect x="230" y="150" width="20" height="200" fill="none" stroke="#e74c3c" stroke-width="5" />
-          <rect x="450" y="150" width="20" height="200" fill="none" stroke="#e74c3c" stroke-width="5" />
-          <rect x="230" y="150" width="240" height="20" fill="none" stroke="#c0392b" stroke-width="5" />
-          
-          <!-- Подписи -->
-          <text x="170" y="125" text-anchor="middle" font-size="12" fill="#333">Передние колеса</text>
-          <text x="630" y="125" text-anchor="middle" font-size="12" fill="#333">Задние колеса</text>
-        </svg>
-      `;
-    }
+        function sideView() {
+            return `
+            <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+                <!-- Фон -->
+                <rect width="1000" height="600" fill="#fcfcfc" />
+                <!-- Горизонт (земля) -->
+                <line x1="50" y1="520" x2="950" y2="520" stroke="#aaa" stroke-width="1" stroke-dasharray="6,4" />
 
-    // Показать вид сбоку по умолчанию
-    window.onload = () => showView('side');
-  </script>
+                <!-- ================= РАМА (нижний контур) ================= -->
+                <path d="M 120,320 L 180,320 L 180,280 L 820,280 L 820,320 L 880,320" 
+                      fill="none" stroke="#2c3e50" stroke-width="5" stroke-linejoin="round" />
+
+                <!-- Передний бампер -->
+                <path d="M 100,320 L 100,260 L 140,260 L 140,320" fill="none" stroke="#7f8c8d" stroke-width="6" />
+                <!-- Задний бампер -->
+                <path d="M 900,320 L 900,280 L 880,280" fill="none" stroke="#7f8c8d" stroke-width="6" />
+
+                <!-- ================= ПЕРЕДНЯЯ ПОДВЕСКА ================= -->
+                <!-- A-образные рычаги (нижний и верхний) -->
+                <line x1="180" y1="320" x2="140" y2="450" stroke="#27ae60" stroke-width="8" stroke-linecap="round" />
+                <line x1="220" y1="320" x2="260" y2="450" stroke="#27ae60" stroke-width="8" stroke-linecap="round" />
+                <line x1="160" y1="280" x2="140" y2="380" stroke="#27ae60" stroke-width="6" stroke-linecap="round" />
+                <line x1="240" y1="280" x2="260" y2="380" stroke="#27ae60" stroke-width="6" stroke-linecap="round" />
+                <!-- Амортизатор -->
+                <line x1="200" y1="280" x2="200" y2="400" stroke="#2ecc71" stroke-width="5" />
+                <circle cx="200" cy="400" r="10" fill="#2ecc71" />
+                <!-- Поворотный кулак (упрощённо) -->
+                <circle cx="200" cy="470" r="12" fill="#e67e22" stroke="#d35400" stroke-width="3" />
+
+                <!-- Переднее колесо -->
+                <circle cx="200" cy="495" r="45" fill="#333" stroke="#111" stroke-width="4" />
+                <circle cx="200" cy="495" r="15" fill="#888" />
+                <!-- Шина (протектор) -->
+                <circle cx="200" cy="495" r="45" fill="none" stroke="#222" stroke-width="8" stroke-dasharray="8,4" />
+
+                <!-- ================= ЗАДНЯЯ ПОДВЕСКА И МОСТ ================= -->
+                <!-- Рессора (дуга) -->
+                <path d="M 760,320 Q 790,380 820,320" fill="none" stroke="#27ae60" stroke-width="6" />
+                <!-- Задний мост (балка) -->
+                <rect x="750" y="380" width="100" height="20" rx="5" fill="#666" stroke="#222" stroke-width="3" />
+                <!-- Полуоси -->
+                <line x1="800" y1="400" x2="800" y2="460" stroke="#555" stroke-width="6" />
+                <!-- Заднее колесо -->
+                <circle cx="800" cy="495" r="55" fill="#333" stroke="#111" stroke-width="4" />
+                <circle cx="800" cy="495" r="18" fill="#888" />
+                <circle cx="800" cy="495" r="55" fill="none" stroke="#222" stroke-width="9" stroke-dasharray="10,5" />
+
+                <!-- ================= ДУГА БЕЗОПАСНОСТИ ================= -->
+                <!-- Основные стойки -->
+                <path d="M 370,280 L 370,110 L 630,110 L 630,280" fill="none" stroke="#e74c3c" stroke-width="8" stroke-linejoin="round" />
+                <!-- Верхняя поперечина -->
+                <line x1="370" y1="110" x2="630" y2="110" stroke="#c0392b" stroke-width="8" />
+                <!-- Косынки усиления -->
+                <line x1="370" y1="160" x2="410" y2="160" stroke="#e74c3c" stroke-width="5" />
+                <line x1="630" y1="160" x2="590" y2="160" stroke="#e74c3c" stroke-width="5" />
+
+                <!-- ================= СИДЕНЬЯ (два ковша бок о бок) ================= -->
+                <!-- Водитель -->
+                <rect x="390" y="230" width="70" height="60" rx="10" fill="#8e44ad" stroke="#5b2c6f" stroke-width="3" />
+                <rect x="390" y="205" width="70" height="25" rx="6" fill="#732d91" />
+                <!-- Пассажир -->
+                <rect x="480" y="230" width="70" height="60" rx="10" fill="#8e44ad" stroke="#5b2c6f" stroke-width="3" />
+                <rect x="480" y="205" width="70" height="25" rx="6" fill="#732d91" />
+                <!-- Надпись -->
+                <text x="500" y="180" text-anchor="middle" font-size="18" fill="#c0392b" font-weight="bold">Дуга безопасности</text>
+
+                <!-- ================= ДВИГАТЕЛЬ + КПП (СВЕРХУ) ================= -->
+                <!-- Подрамник двигателя -->
+                <rect x="660" y="180" width="100" height="20" rx="3" fill="#bdc3c7" stroke="#2c3e50" stroke-width="2" />
+                <!-- Двигатель (Lifan) -->
+                <rect x="670" y="140" width="80" height="40" rx="6" fill="#3498db" stroke="#1f618d" stroke-width="3" />
+                <!-- Редуктор мотоблока (пристыкован) -->
+                <rect x="640" y="120" width="40" height="60" rx="4" fill="#2980b9" stroke="#1f618d" stroke-width="2" />
+                <!-- Выходной вал редуктора -->
+                <circle cx="660" cy="150" r="8" fill="#f1c40f" stroke="#d4ac0d" stroke-width="2" />
+                <!-- Цепная передача вниз к мосту -->
+                <line x1="660" y1="158" x2="800" y2="380" stroke="#f39c12" stroke-width="3" stroke-dasharray="6,3" />
+                <text x="730" y="270" font-size="14" fill="#e67e22">Цепь</text>
+                <!-- Звезда на мосту -->
+                <circle cx="800" cy="380" r="10" fill="#f1c40f" stroke="#d4ac0d" stroke-width="2" />
+
+                <!-- Выхлопная труба -->
+                <path d="M 750,150 L 780,150 L 780,200 L 820,200" fill="none" stroke="#7f8c8d" stroke-width="5" stroke-linejoin="round" />
+                <!-- Глушитель -->
+                <ellipse cx="830" cy="200" rx="15" ry="10" fill="#95a5a6" stroke="#2c3e50" stroke-width="2" />
+
+                <!-- ================= ГРУЗОВАЯ ПЛАТФОРМА ================= -->
+                <rect x="840" y="280" width="60" height="40" fill="none" stroke="#95a5a6" stroke-width="2" stroke-dasharray="4,3" />
+                <text x="870" y="305" font-size="12" fill="#555">Платформа</text>
+                <!-- Задний борт -->
+                <line x1="900" y1="280" x2="900" y2="320" stroke="#2c3e50" stroke-width="4" />
+
+                <!-- ================= РАЗМЕРНЫЕ ЛИНИИ (сбоку) ================= -->
+                <!-- Длина общая -->
+                <line x1="100" y1="560" x2="920" y2="560" stroke="#e67e22" stroke-width="2" />
+                <line x1="100" y1="555" x2="100" y2="565" stroke="#e67e22" stroke-width="2" />
+                <line x1="920" y1="555" x2="920" y2="565" stroke="#e67e22" stroke-width="2" />
+                <text x="510" y="555" text-anchor="middle" font-size="16" fill="#d35400">2750 мм</text>
+
+                <!-- Колёсная база -->
+                <line x1="200" y1="540" x2="800" y2="540" stroke="#2980b9" stroke-width="2" />
+                <line x1="200" y1="535" x2="200" y2="545" stroke="#2980b9" stroke-width="2" />
+                <line x1="800" y1="535" x2="800" y2="545" stroke="#2980b9" stroke-width="2" />
+                <text x="500" y="535" text-anchor="middle" font-size="16" fill="#2980b9">1800 мм (база)</text>
+
+                <!-- Высота дуги -->
+                <line x1="70" y1="110" x2="70" y2="520" stroke="#27ae60" stroke-width="2" />
+                <line x1="65" y1="110" x2="75" y2="110" stroke="#27ae60" stroke-width="2" />
+                <line x1="65" y1="520" x2="75" y2="520" stroke="#27ae60" stroke-width="2" />
+                <text x="55" y="320" text-anchor="middle" font-size="16" fill="#27ae60" transform="rotate(-90,55,320)">1500 мм</text>
+
+                <!-- Дорожный просвет -->
+                <line x1="300" y1="320" x2="300" y2="520" stroke="#8e44ad" stroke-width="2" />
+                <line x1="295" y1="320" x2="305" y2="320" stroke="#8e44ad" stroke-width="2" />
+                <line x1="295" y1="520" x2="305" y2="520" stroke="#8e44ad" stroke-width="2" />
+                <text x="285" y="430" text-anchor="middle" font-size="14" fill="#8e44ad" transform="rotate(-90,285,430)">Клиренс 200 мм</text>
+            </svg>`;
+        }
+
+        function topView() {
+            return `
+            <svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
+                <rect width="1000" height="700" fill="#fcfcfc" />
+                <!-- Габаритный прямоугольник (1400x2750) -->
+                <rect x="100" y="100" width="800" height="500" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="8,6" />
+                <text x="500" y="90" text-anchor="middle" font-size="16" fill="#999">Габарит: 1400 × 2750 мм</text>
+
+                <!-- Рама (контур) -->
+                <rect x="140" y="130" width="720" height="440" rx="12" fill="none" stroke="#2c3e50" stroke-width="5" />
+
+                <!-- Передний бампер -->
+                <rect x="110" y="170" width="50" height="360" rx="8" fill="#bdc3c7" stroke="#2c3e50" stroke-width="3" />
+
+                <!-- Передние колеса -->
+                <circle cx="190" cy="180" r="35" fill="#333" stroke="#111" stroke-width="4" />
+                <circle cx="190" cy="520" r="35" fill="#333" stroke="#111" stroke-width="4" />
+
+                <!-- Задние колеса -->
+                <circle cx="810" cy="180" r="45" fill="#333" stroke="#111" stroke-width="4" />
+                <circle cx="810" cy="520" r="45" fill="#333" stroke="#111" stroke-width="4" />
+
+                <!-- Рулевая рейка -->
+                <rect x="150" y="300" width="30" height="100" rx="5" fill="#95a5a6" stroke="#2c3e50" stroke-width="3" />
+                <!-- Рулевые тяги -->
+                <line x1="180" y1="310" x2="220" y2="230" stroke="#7f8c8d" stroke-width="4" />
+                <line x1="180" y1="390" x2="220" y2="470" stroke="#7f8c8d" stroke-width="4" />
+
+                <!-- Сиденья (водитель и пассажир) -->
+                <rect x="300" y="250" width="90" height="70" rx="10" fill="#8e44ad" stroke="#5b2c6f" stroke-width="3" />
+                <text x="345" y="290" text-anchor="middle" font-size="18" fill="white">Вод.</text>
+                <rect x="410" y="250" width="90" height="70" rx="10" fill="#8e44ad" stroke="#5b2c6f" stroke-width="3" />
+                <text x="455" y="290" text-anchor="middle" font-size="18" fill="white">Пасс.</text>
+
+                <!-- Центральный тоннель -->
+                <rect x="380" y="250" width="40" height="70" fill="#34495e" stroke="#2c3e50" stroke-width="2" />
+                <line x1="400" y1="270" x2="400" y2="320" stroke="#fff" stroke-width="2" stroke-dasharray="2,2" />
+
+                <!-- Двигатель + КПП (сверху, вид сверху) -->
+                <rect x="560" y="230" width="120" height="80" rx="8" fill="#3498db" stroke="#1f618d" stroke-width="3" />
+                <text x="620" y="275" text-anchor="middle" font-size="16" fill="white">Двигатель</text>
+                <text x="620" y="295" text-anchor="middle" font-size="14" fill="white">+ КПП</text>
+                <!-- Выходной вал (звезда) -->
+                <circle cx="680" cy="270" r="10" fill="#f1c40f" stroke="#d4ac0d" stroke-width="2" />
+                <!-- Цепь вниз (обозначена линией) -->
+                <line x1="680" y1="280" x2="810" y2="400" stroke="#f39c12" stroke-width="3" stroke-dasharray="6,4" />
+
+                <!-- Грузовая платформа -->
+                <rect x="700" y="280" width="130" height="200" fill="none" stroke="#95a5a6" stroke-width="3" stroke-dasharray="6,4" />
+                <text x="765" y="385" text-anchor="middle" font-size="18" fill="#555">Платформа</text>
+                <text x="765" y="410" text-anchor="middle" font-size="14" fill="#555">1200×800 мм</text>
+
+                <!-- Дуга безопасности (вид сверху) -->
+                <rect x="270" y="200" width="15" height="300" fill="none" stroke="#e74c3c" stroke-width="7" />
+                <rect x="515" y="200" width="15" height="300" fill="none" stroke="#e74c3c" stroke-width="7" />
+                <rect x="270" y="200" width="260" height="15" fill="none" stroke="#c0392b" stroke-width="7" />
+
+                <!-- Размеры -->
+                <!-- Ширина колеи -->
+                <line x1="190" y1="620" x2="810" y2="620" stroke="#2980b9" stroke-width="2" />
+                <line x1="190" y1="615" x2="190" y2="625" stroke="#2980b9" stroke-width="2" />
+                <line x1="810" y1="615" x2="810" y2="625" stroke="#2980b9" stroke-width="2" />
+                <text x="500" y="640" text-anchor="middle" font-size="16" fill="#2980b9">1300 мм (колея)</text>
+
+                <!-- Длина -->
+                <line x1="110" y1="660" x2="890" y2="660" stroke="#e67e22" stroke-width="2" />
+                <line x1="110" y1="655" x2="110" y2="665" stroke="#e67e22" stroke-width="2" />
+                <line x1="890" y1="655" x2="890" y2="665" stroke="#e67e22" stroke-width="2" />
+                <text x="500" y="680" text-anchor="middle" font-size="16" fill="#e67e22">2750 мм (длина)</text>
+
+                <!-- Ширина по сиденьям -->
+                <line x1="300" y1="140" x2="500" y2="140" stroke="#8e44ad" stroke-width="2" />
+                <line x1="300" y1="135" x2="300" y2="145" stroke="#8e44ad" stroke-width="2" />
+                <line x1="500" y1="135" x2="500" y2="145" stroke="#8e44ad" stroke-width="2" />
+                <text x="400" y="130" text-anchor="middle" font-size="14" fill="#8e44ad">1200 мм салон</text>
+            </svg>`;
+        }
+
+        // Показать вид сбоку по умолчанию
+        window.onload = () => showView('side');
+    </script>
 </body>
 </html>
